@@ -1,24 +1,78 @@
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml" lang="fr">
-
 <head>
   <meta charset="utf-8">
-  <meta name="author" content="Wassil Damine El Karafi Zenedine">
-  <meta name="copyright" content="Wassil Damine El Karafi Zenedine">
-  <title>Projet Info3Ba</title>
+  <meta name="author" content="Damine Wassil, Zenedine El Karafi">
+  <meta name="copyright" content="Damine Wassil, Zenedine El Karaf">
+  <title>Projet Info3Ba - Curling 2025-2026</title>
+  
+  <!-- Librairies Three.js -->
   <script type="text/javascript" charset="UTF-8" src="../../libs/three/three.js"></script>
-  <script type="text/javascript" charset="UTF-8" src="../../libs/other/ThreeBSP.js"></script>
   <script type="text/javascript" charset="UTF-8" src="../../libs/three/controls/TrackballControls.js"></script>
   <script type="text/javascript" src="../../libs/util/dat.gui.js"></script>
   <script type="text/javascript" src="../../libs/util/Stats.js"></script>
-  <script type="text/javascript" src="../../libs/util/util.js"></script>
-  <script type="text/javascript" src="../js/CameraLumiere.js"></script>
-  <script type="text/javascript" src="../js/init.js"></script>
-  <link rel="stylesheet" href="../css/init.css">
+  
+  <!-- Scripts du projet -->
+  <script type="text/javascript" src="../js/Pierre.js"></script>
+  <script type="text/javascript" src="../js/Piste.js"></script>
+  <script type="text/javascript" src="../js/Trajectoire.js"></script>
+  <script type="text/javascript" src="../js/GestionnaireCollisions.js"></script>
+  <script type="text/javascript" src="../js/GestionnaireScore.js"></script>
+  <script type="text/javascript" src="../js/Camera.js"></script>
+  <script type="text/javascript" src="../js/Lumiere.js"></script>
+  <script type="text/javascript" src="../js/JeuCurling.js"></script>
+  
+  <!-- Feuille de style -->
+  <link rel="stylesheet" href="../css/style.css">
 </head>
 
-
 <body>
+  <!-- Conteneur principal pour le canvas WebGL -->
+  <div id="conteneur-webgl"></div>
+  
+  <!-- Tableau des scores -->
+  <div id="tableau-scores">
+    <h3>Tableau des Scores</h3>
+    <p id="manche-actuelle">Manche: <span id="numero-manche">1</span></p>
+    <p id="equipe-actuelle">Équipe: <span id="nom-equipe" class="equipe-rouge">Rouge</span></p>
+    <p id="lancers-restants">Lancers restants: <span id="nombre-lancers">10</span></p>
+    
+    <table id="table-scores">
+      <thead>
+        <tr>
+          <th>Manche</th>
+          <th class="equipe-rouge">Rouge</th>
+          <th class="equipe-bleue">Bleu</th>
+          <th>Meneur</th>
+        </tr>
+      </thead>
+      <tbody id="corps-table-scores">
+        <!-- Les scores seront ajoutés dynamiquement ici -->
+      </tbody>
+      <tfoot>
+        <tr>
+          <th>Total</th>
+          <th id="total-rouge" class="equipe-rouge">0</th>
+          <th id="total-bleu" class="equipe-bleue">0</th>
+          <th id="meneur-total"></th>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+  
+  <!-- Informations et contrôles -->
+  <div id="info-controles">
+    <h4>Contrôles</h4>
+    <ul>
+      <li><strong>Espace</strong>: Lancer la pierre</li>
+      <li><strong>Clic</strong>: Changer trajectoire</li>
+      <li><strong>L</strong>: Trajectoire rectiligne</li>
+      <li><strong>C</strong>: Trajectoire courbe</li>
+      <li><strong>R</strong>: Réinitialiser</li>
+    </ul>
+  </div>
+  
+  <!-- Statistiques de performance (FPS) -->
+  <div id="stats-container"></div>
 </body>
-
 </html>
