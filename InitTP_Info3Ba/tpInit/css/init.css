@@ -1,0 +1,57 @@
+.expo{
+ vertical-align:super;
+}
+
+body {
+ background-color:#AAAAAA;
+/*margin: 0.5;
+    overflow: hidden;*/
+}
+
+#webgl{
+ border:solid 2px red;
+ /*margin-left: 0.5cm;
+ width:95%;
+ height:95%;*/
+ background-color:white;
+}
+
+#TableauCamera{
+ text-align:center;
+ border : solid red 2px;
+ background-color:green;
+ border-collapse:collapse;
+}
+
+#TableauCamera td, #TableauCamera th{
+ /*text-align:center;*/
+ border : solid red 2px;
+ /*background-color:green;
+ border-collapse:collapse;*/
+}
+
+input[type='number']{
+ width:5cm;
+ background-color:yellow;
+ color:blue;
+}
+input[type='button']{
+ margin-left:1cm;
+ margin-top:0.2cm;
+ width:5cm;
+ background-color:#99FF99;
+ color:red;
+}
+#divBouton{
+ float:right;
+}
+#controleRepere{
+ float:left;
+ margin-right:1cm;
+ border : solid 3px #FFFF00;
+}
+fieldset{
+ color : white;
+ background-color:black;
+ font-weight:900;
+}
