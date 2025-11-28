@@ -1,57 +1,193 @@
-.expo{
- vertical-align:super;
+/* ================================================
+   STYLES GÉNÉRAUX
+   ================================================ */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
 body {
- background-color:#AAAAAA;
-/*margin: 0.5;
-    overflow: hidden;*/
+  font-family: 'Arial', sans-serif;
+  background-color: #1a1a1a;
+  color: #ffffff;
+  overflow: hidden;
 }
 
-#webgl{
- border:solid 2px red;
- /*margin-left: 0.5cm;
- width:95%;
- height:95%;*/
- background-color:white;
+/* ================================================
+   CONTENEUR WEBGL
+   ================================================ */
+#conteneur-webgl {
+  width: 100vw;
+  height: 100vh;
+  position: relative;
 }
 
-#TableauCamera{
- text-align:center;
- border : solid red 2px;
- background-color:green;
- border-collapse:collapse;
+#conteneur-webgl canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
-#TableauCamera td, #TableauCamera th{
- /*text-align:center;*/
- border : solid red 2px;
- /*background-color:green;
- border-collapse:collapse;*/
+/* ================================================
+   TABLEAU DES SCORES
+   ================================================ */
+#tableau-scores {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  background-color: rgba(0, 0, 0, 0.85);
+  padding: 20px;
+  border-radius: 10px;
+  border: 2px solid #444;
+  min-width: 300px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
 }
 
-input[type='number']{
- width:5cm;
- background-color:yellow;
- color:blue;
+#tableau-scores h3 {
+  text-align: center;
+  margin-bottom: 15px;
+  font-size: 1.5em;
+  color: #fff;
+  border-bottom: 2px solid #fff;
+  padding-bottom: 10px;
 }
-input[type='button']{
- margin-left:1cm;
- margin-top:0.2cm;
- width:5cm;
- background-color:#99FF99;
- color:red;
+
+#tableau-scores p {
+  margin: 8px 0;
+  font-size: 1.1em;
 }
-#divBouton{
- float:right;
+
+/* Styles pour les équipes */
+.equipe-rouge {
+  color: #ff4444;
+  font-weight: bold;
 }
-#controleRepere{
- float:left;
- margin-right:1cm;
- border : solid 3px #FFFF00;
+
+.equipe-bleue {
+  color: #4444ff;
+  font-weight: bold;
 }
-fieldset{
- color : white;
- background-color:black;
- font-weight:900;
+
+/* ================================================
+   TABLE DES SCORES
+   ================================================ */
+#table-scores {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 15px;
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+#table-scores th,
+#table-scores td {
+  padding: 10px;
+  text-align: center;
+  border: 1px solid #555;
+}
+
+#table-scores thead th {
+  background-color: rgba(255, 255, 255, 0.1);
+  font-weight: bold;
+  text-transform: uppercase;
+  font-size: 0.9em;
+}
+
+#table-scores tbody tr:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+#table-scores tfoot th {
+  background-color: rgba(255, 255, 255, 0.15);
+  font-weight: bold;
+  font-size: 1.1em;
+  border-top: 2px solid #fff;
+}
+
+/* Mise en évidence du meneur */
+.meneur-manche {
+  background-color: rgba(255, 215, 0, 0.2);
+  font-weight: bold;
+}
+
+/* ================================================
+   INFORMATIONS ET CONTRÔLES
+   ================================================ */
+#info-controles {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  background-color: rgba(0, 0, 0, 0.85);
+  padding: 15px;
+  border-radius: 10px;
+  border: 2px solid #444;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+}
+
+#info-controles h4 {
+  margin-bottom: 10px;
+  color: #ffd700;
+  font-size: 1.2em;
+}
+
+#info-controles ul {
+  list-style: none;
+  padding: 0;
+}
+
+#info-controles li {
+  margin: 5px 0;
+  padding: 5px 0;
+  font-size: 0.95em;
+}
+
+#info-controles strong {
+  color: #4CAF50;
+  display: inline-block;
+  min-width: 80px;
+}
+
+/* ================================================
+   CONTENEUR STATS (FPS)
+   ================================================ */
+#stats-container {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+}
+
+/* ================================================
+   ANIMATIONS
+   ================================================ */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.nouvelle-ligne-score {
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+/* ================================================
+   RESPONSIVE
+   ================================================ */
+@media (max-width: 768px) {
+  #tableau-scores,
+  #info-controles {
+    font-size: 0.85em;
+    padding: 10px;
+    min-width: 250px;
+  }
+  
+  #table-scores th,
+  #table-scores td {
+    padding: 6px;
+    font-size: 0.9em;
+  }
 }
