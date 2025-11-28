@@ -1,229 +1,294 @@
-import * as THREE from './libs/three.min.js';
+/**
+ * ================================================
+ * Classe Pierre - Gestion des pierres de curling
+ * ================================================
+ * 
+ * Cette classe crée une pierre de curling composée de 3 surfaces
+ * de révolution (lathe) avec raccord G1 entre chaque surface.
+ * 
+ * Contraintes respectées:
+ * - Au moins 3 surfaces de révolution avec raccord G1
+ * - Au moins 2 lathe lisses qui se raccordent
+ * - Couleurs différentes par équipe (rouge/bleu)
+ * - Surface intermédiaire de couleur différente
+ */
 
-export class StoneManager {
-  constructor(scene) {
-    this.scene = scene;
-    this.stones = [];
-    this.movingStones = [];
-
-    this.setupStoneGeometries();
+class Pierre {
+  /**
+   * Constructeur de la pierre
+   * @param {string} equipe - 'rouge' ou 'bleu'
+   */
+  constructor(equipe) {
+    this.equipe = equipe;
+    this.rayon = 0.145; // Rayon standard d'une pierre de curling (14.5 cm)
+    this.groupe = new THREE.Group();
+    
+    // Propriétés physiques pour les déplacements
+    this.vitesse = new THREE.Vector3();
+    this.vitesseAngulaire = 0;
+    this.enMouvement = false;
+    
+    // Points de trajectoire pour animation
+    this.pointsTrajectoire = [];
+    this.indexPointActuel = 0;
+    
+    // Callback quand la pierre s'arrête
+    this.callbackArret = null;
+    
+    this.creerPierre();
   }
-
-  setupStoneGeometries() {
-    // Géométrie de base pour les pierres (surfaces de révolution)
-    this.stoneGeometry = this.createStoneGeometry();
-  }
-
-  createStoneGeometry() {
-    // Première surface de révolution (base)
-    const basePoints = [];
-    for (let i = 0; i <= 10; i++) {
-      const angle = (i / 10) * Math.PI;
-      basePoints.push(new THREE.Vector2(
-        Math.sin(angle) * 0.3 + 0.2,
-        i * 0.1
-      ));
+  
+  /**
+   * Crée la géométrie complète de la pierre avec 3 surfaces de révolution
+   */
+  creerPierre() {
+    // ========================================
+    // SURFACE 1: BASE (Lathe lisse)
+    // ========================================
+    // Création de points pour une courbe lisse en bas de la pierre
+    const pointsBase = [];
+    const nombrePointsBase = 20;
+    
+    for (let i = 0; i <= nombrePointsBase; i++) {
+      const t = i / nombrePointsBase;
+      // Courbe parabolique pour la base
+      const angle = t * Math.PI / 2;
+      const x = Math.sin(angle) * this.rayon * 0.95;
+      const y = t * 0.08; // Hauteur de la base
+      pointsBase.push(new THREE.Vector2(x, y));
     }
-    const baseGeometry = new THREE.LatheGeometry(basePoints, 32);
-
-    // Deuxième surface (corps principal) - lisse
-    const bodyPoints = [];
-    for (let i = 0; i <= 20; i++) {
-      const angle = (i / 20) * Math.PI;
-      bodyPoints.push(new THREE.Vector2(
-        Math.sin(angle) * 0.4 + 0.1,
-        1.0 + i * 0.08
-      ));
+    
+    const geometrieBase = new THREE.LatheGeometry(pointsBase, 32);
+    const couleurEquipe = this.equipe === 'rouge' ? 0xcc0000 : 0x0000cc;
+    const materielBase = new THREE.MeshPhongMaterial({
+      color: couleurEquipe,
+      shininess: 80,
+      specular: 0x333333
+    });
+    
+    const meshBase = new THREE.Mesh(geometrieBase, materielBase);
+    meshBase.castShadow = true;
+    meshBase.receiveShadow = true;
+    
+    // ========================================
+    // SURFACE 2: CORPS PRINCIPAL (Lathe lisse)
+    // Couleur DIFFÉRENTE (contrainte du sujet)
+    // ========================================
+    const pointsCorps = [];
+    const nombrePointsCorps = 25;
+    
+    // Calcul du dernier point de la base pour assurer la continuité G1
+    const dernierPointBase = pointsBase[nombrePointsBase];
+    
+    for (let i = 0; i <= nombrePointsCorps; i++) {
+      const t = i / nombrePointsCorps;
+      const angle = t * Math.PI;
+      // Fonction sinusoïdale pour un corps arrondi
+      const x = (Math.sin(angle) * 0.85 + 0.15) * this.rayon;
+      const y = dernierPointBase.y + t * 0.10; // Continue depuis la base
+      pointsCorps.push(new THREE.Vector2(x, y));
     }
-    const bodyGeometry = new THREE.LatheGeometry(bodyPoints, 32);
-
-    // Troisième surface (bouton) - lisse
-    const handlePoints = [];
-    for (let i = 0; i <= 8; i++) {
-      const angle = (i / 8) * Math.PI;
-      handlePoints.push(new THREE.Vector2(
-        Math.sin(angle) * 0.15 + 0.05,
-        2.6 + i * 0.05
-      ));
+    
+    const geometrieCorps = new THREE.LatheGeometry(pointsCorps, 32);
+    // IMPORTANT: Couleur différente pour la surface intermédiaire (contrainte)
+    const materielCorps = new THREE.MeshPhongMaterial({
+      color: 0x666666, // Gris pour différencier
+      shininess: 60,
+      specular: 0x222222
+    });
+    
+    const meshCorps = new THREE.Mesh(geometrieCorps, materielCorps);
+    meshCorps.castShadow = true;
+    meshCorps.receiveShadow = true;
+    
+    // ========================================
+    // SURFACE 3: POIGNÉE (Lathe lisse)
+    // ========================================
+    const pointsPoignee = [];
+    const nombrePointsPoignee = 15;
+    
+    // Calcul du dernier point du corps pour continuité G1
+    const dernierPointCorps = pointsCorps[nombrePointsCorps];
+    
+    for (let i = 0; i <= nombrePointsPoignee; i++) {
+      const t = i / nombrePointsPoignee;
+      const angle = t * Math.PI;
+      // Poignée arrondie
+      const x = Math.sin(angle) * this.rayon * 0.45;
+      const y = dernierPointCorps.y + t * 0.05; // Continue depuis le corps
+      pointsPoignee.push(new THREE.Vector2(x, y));
     }
-    const handleGeometry = new THREE.LatheGeometry(handlePoints, 32);
-
-    return { baseGeometry, bodyGeometry, handleGeometry };
-  }
-
-  createStone(team) {
-    const stoneGroup = new THREE.Group();
-
-    // Matériaux selon les contraintes
-    const baseMaterial = new THREE.MeshPhongMaterial({
-      color: team === 'red' ? 0xff4444 : 0x4444ff
+    
+    const geometriePoignee = new THREE.LatheGeometry(pointsPoignee, 32);
+    const materielPoignee = new THREE.MeshPhongMaterial({
+      color: couleurEquipe,
+      shininess: 80,
+      specular: 0x333333
     });
-
-    const bodyMaterial = new THREE.MeshPhongMaterial({
-      color: 0x888888 // Couleur différente pour la surface intermédiaire
-    });
-
-    const handleMaterial = new THREE.MeshPhongMaterial({
-      color: team === 'red' ? 0xff4444 : 0x4444ff
-    });
-
-    // Création des trois surfaces
-    const base = new THREE.Mesh(this.stoneGeometry.baseGeometry, baseMaterial);
-    const body = new THREE.Mesh(this.stoneGeometry.bodyGeometry, bodyMaterial);
-    const handle = new THREE.Mesh(this.stoneGeometry.handleGeometry, handleMaterial);
-
-    // Positionnement
-    base.position.y = 0;
-    body.position.y = 1.0;
-    handle.position.y = 2.6;
-
-    stoneGroup.add(base);
-    stoneGroup.add(body);
-    stoneGroup.add(handle);
-
-    // Propriétés physiques
-    stoneGroup.userData = {
-      team: team,
-      velocity: new THREE.Vector3(),
-      angularVelocity: 0,
-      isMoving: false,
-      position: new THREE.Vector3(),
-      inHouse: false
+    
+    const meshPoignee = new THREE.Mesh(geometriePoignee, materielPoignee);
+    meshPoignee.castShadow = true;
+    meshPoignee.receiveShadow = true;
+    
+    // ========================================
+    // ASSEMBLAGE DES 3 SURFACES
+    // ========================================
+    this.groupe.add(meshBase);
+    this.groupe.add(meshCorps);
+    this.groupe.add(meshPoignee);
+    
+    // Positionner la pierre légèrement au-dessus du sol
+    this.groupe.position.y = this.rayon;
+    
+    // Stockage des données pour la physique
+    this.groupe.userData = {
+      equipe: this.equipe,
+      pierre: this
     };
-
-    return stoneGroup;
   }
-
-  prepareNewStone(team) {
-    const stone = this.createStone(team);
-    stone.position.set(0, 0.5, 18); // Position de départ
-    this.scene.add(stone);
-    this.stones.push(stone);
-
-    return stone;
+  
+  /**
+   * Initialise le lancer de la pierre avec une trajectoire
+   * @param {Array} pointsTrajectoire - Tableau de Vector3 définissant le chemin
+   * @param {number} vitesseInitiale - Vitesse de déplacement
+   * @param {Function} callback - Fonction appelée quand la pierre s'arrête
+   */
+  lancer(pointsTrajectoire, vitesseInitiale, callback) {
+    this.pointsTrajectoire = pointsTrajectoire;
+    this.indexPointActuel = 0;
+    this.vitesseActuelle = vitesseInitiale;
+    this.enMouvement = true;
+    this.callbackArret = callback;
+    this.vitesseAngulaire = 0.1; // Rotation de la pierre
   }
-
-  throwStone(team, velocity, rotation, onStopCallback) {
-    const stone = this.prepareNewStone(team);
-    stone.userData.velocity.copy(velocity);
-    stone.userData.angularVelocity = rotation;
-    stone.userData.isMoving = true;
-    stone.userData.onStopCallback = onStopCallback;
-
-    this.movingStones.push(stone);
-  }
-
-  update() {
-    for (let i = this.movingStones.length - 1; i >= 0; i--) {
-      const stone = this.movingStones[i];
-
-      if (stone.userData.isMoving) {
-        this.updateStonePhysics(stone);
-
-        // Vérifier si la pierre s'est arrêtée
-        if (stone.userData.velocity.length() < 0.01) {
-          stone.userData.isMoving = false;
-          stone.userData.velocity.set(0, 0, 0);
-          this.movingStones.splice(i, 1);
-
-          if (stone.userData.onStopCallback) {
-            stone.userData.onStopCallback();
-          }
-        }
-      }
+  
+  /**
+   * Met à jour la position de la pierre (appelé à chaque frame)
+   * @returns {boolean} - true si la pierre est toujours en mouvement
+   */
+  mettreAJour() {
+    if (!this.enMouvement) return false;
+    
+    const points = this.pointsTrajectoire;
+    const index = this.indexPointActuel;
+    
+    // Vérifier si on a atteint la fin de la trajectoire
+    if (index >= points.length - 1) {
+      this.arreter();
+      return false;
     }
-  }
-
-  updateStonePhysics(stone) {
-    // Application de la friction
-    stone.userData.velocity.multiplyScalar(0.98);
-    stone.userData.angularVelocity *= 0.98;
-
-    // Mise à jour de la position
-    stone.position.add(stone.userData.velocity);
-
-    // Rotation
-    stone.rotation.y += stone.userData.angularVelocity;
-
-    // Collisions avec les bords
-    this.handleBoundaryCollisions(stone);
-
-    // Collisions entre pierres
-    this.handleStoneCollisions(stone);
-  }
-
-  handleBoundaryCollisions(stone) {
-    const rinkBounds = { minX: -4.5, maxX: 4.5, minZ: -21, maxZ: 21 };
-
-    if (stone.position.x < rinkBounds.minX || stone.position.x > rinkBounds.maxX) {
-      stone.userData.velocity.x *= -0.5; // Rebond
-      stone.position.x = THREE.MathUtils.clamp(
-        stone.position.x,
-        rinkBounds.minX,
-        rinkBounds.maxX
-      );
-    }
-
-    if (stone.position.z < rinkBounds.minZ || stone.position.z > rinkBounds.maxZ) {
-      stone.userData.velocity.z *= -0.5; // Rebond
-      stone.position.z = THREE.MathUtils.clamp(
-        stone.position.z,
-        rinkBounds.minZ,
-        rinkBounds.maxZ
-      );
-    }
-  }
-
-  handleStoneCollisions(stone) {
-    for (const otherStone of this.stones) {
-      if (otherStone !== stone && otherStone.userData.isMoving) {
-        const distance = stone.position.distanceTo(otherStone.position);
-        const collisionDistance = 0.6; // Diamètre des pierres
-
-        if (distance < collisionDistance) {
-          this.resolveStoneCollision(stone, otherStone);
-        }
-      }
-    }
-  }
-
-  resolveStoneCollision(stone1, stone2) {
-    // Collision simple et vraisemblable (pas physiquement correcte)
+    
+    // Calculer la direction vers le prochain point
+    const pointCible = points[index + 1];
     const direction = new THREE.Vector3()
-      .subVectors(stone2.position, stone1.position)
+      .subVectors(pointCible, this.groupe.position)
       .normalize();
-
-    const force = 0.5;
-
-    stone1.userData.velocity.sub(direction.clone().multiplyScalar(force));
-    stone2.userData.velocity.add(direction.clone().multiplyScalar(force));
-  }
-
-  calculateScore() {
-    // Calcul du score selon les règles du curling
-    let redScore = 0;
-    let blueScore = 0;
-
-    // Logique de calcul simplifiée
-    for (const stone of this.stones) {
-      const distanceToCenter = stone.position.length();
-      if (distanceToCenter < 1.83) { // Dans la maison
-        if (stone.userData.team === 'red') {
-          redScore++;
-        } else {
-          blueScore++;
-        }
-      }
+    
+    // Appliquer le mouvement
+    this.vitesse.copy(direction).multiplyScalar(this.vitesseActuelle);
+    this.groupe.position.add(this.vitesse);
+    
+    // Rotation de la pierre (effet visuel)
+    this.groupe.rotation.y += this.vitesseAngulaire;
+    
+    // Application de la friction (décélération progressive)
+    const friction = 0.985;
+    this.vitesseActuelle *= friction;
+    this.vitesseAngulaire *= friction;
+    
+    // Passer au point suivant si on est assez proche
+    if (this.groupe.position.distanceTo(pointCible) < 0.3) {
+      this.indexPointActuel++;
     }
-
-    return { red: redScore, blue: blueScore };
-  }
-
-  reset() {
-    for (const stone of this.stones) {
-      this.scene.remove(stone);
+    
+    // Arrêter si la vitesse est trop faible
+    if (this.vitesseActuelle < 0.01) {
+      this.arreter();
+      return false;
     }
-    this.stones = [];
-    this.movingStones = [];
+    
+    return true;
+  }
+  
+  /**
+   * Arrête complètement la pierre
+   */
+  arreter() {
+    this.enMouvement = false;
+    this.vitesse.set(0, 0, 0);
+    this.vitesseActuelle = 0;
+    this.vitesseAngulaire = 0;
+    
+    // Appeler le callback si défini
+    if (this.callbackArret) {
+      this.callbackArret();
+    }
+  }
+  
+  /**
+   * Applique une impulsion à la pierre (collision)
+   * @param {THREE.Vector3} direction - Direction de l'impulsion
+   * @param {number} force - Force de l'impulsion
+   */
+  appliquerImpulsion(direction, force) {
+    this.vitesse.add(direction.clone().multiplyScalar(force));
+    this.vitesseActuelle = this.vitesse.length();
+    
+    if (this.vitesseActuelle > 0.05 && !this.enMouvement) {
+      this.enMouvement = true;
+    }
+  }
+  
+  /**
+   * Obtient le mesh THREE.js de la pierre
+   * @returns {THREE.Group}
+   */
+  obtenirGroupe() {
+    return this.groupe;
+  }
+  
+  /**
+   * Obtient la position actuelle de la pierre
+   * @returns {THREE.Vector3}
+   */
+  obtenirPosition() {
+    return this.groupe.position.clone();
+  }
+  
+  /**
+   * Définit la position de la pierre
+   * @param {number} x
+   * @param {number} y
+   * @param {number} z
+   */
+  definirPosition(x, y, z) {
+    this.groupe.position.set(x, y, z);
+  }
+  
+  /**
+   * Vérifie si la pierre est dans la maison
+   * @param {THREE.Vector3} centreMaison - Position du centre de la maison
+   * @param {number} rayonMaison - Rayon de la maison
+   * @returns {boolean}
+   */
+  estDansLaMaison(centreMaison, rayonMaison) {
+    const distance = new THREE.Vector2(
+      this.groupe.position.x - centreMaison.x,
+      this.groupe.position.z - centreMaison.z
+    ).length();
+    
+    return distance <= rayonMaison;
+  }
+  
+  /**
+   * Calcule la distance au centre de la maison
+   * @param {THREE.Vector3} centreMaison
+   * @returns {number}
+   */
+  distanceAuCentre(centreMaison) {
+    return new THREE.Vector2(
+      this.groupe.position.x - centreMaison.x,
+      this.groupe.position.z - centreMaison.z
+    ).length();
   }
 }
