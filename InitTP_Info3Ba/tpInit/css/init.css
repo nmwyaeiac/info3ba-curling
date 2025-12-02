@@ -8,19 +8,75 @@
 }
 
 body {
-  font-family: 'Arial', sans-serif;
-  background-color: #1a1a1a;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
   color: #ffffff;
   overflow: hidden;
+  height: 100vh;
+}
+
+/* ================================================
+   EN-TÊTE
+   ================================================ */
+#entete {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 80px;
+  background: linear-gradient(135deg, #0f3460 0%, #16213e 100%);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 30px;
+  z-index: 1000;
+  border-bottom: 3px solid #e94560;
+}
+
+#entete h1 {
+  font-size: 1.8em;
+  font-weight: 700;
+  color: #ffffff;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+#info-partie {
+  display: flex;
+  gap: 30px;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 20px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.info-item .label {
+  font-size: 0.85em;
+  color: #b0b0b0;
+  margin-bottom: 4px;
+}
+
+.info-item .valeur {
+  font-size: 1.3em;
+  font-weight: bold;
 }
 
 /* ================================================
    CONTENEUR WEBGL
    ================================================ */
 #conteneur-webgl {
-  width: 100vw;
-  height: 100vh;
-  position: relative;
+  position: fixed;
+  top: 80px;
+  left: 320px;
+  right: 0;
+  bottom: 0;
+  background: #000;
 }
 
 #conteneur-webgl canvas {
@@ -30,135 +86,241 @@ body {
 }
 
 /* ================================================
-   TABLEAU DES SCORES
+   PANNEAU LATÉRAL GAUCHE
    ================================================ */
-#tableau-scores {
-  position: absolute;
-  top: 20px;
-  left: 20px;
-  background-color: rgba(0, 0, 0, 0.85);
+#panneau-gauche {
+  position: fixed;
+  left: 0;
+  top: 80px;
+  bottom: 0;
+  width: 320px;
+  background: linear-gradient(180deg, #16213e 0%, #0f3460 100%);
+  overflow-y: auto;
   padding: 20px;
-  border-radius: 10px;
-  border: 2px solid #444;
-  min-width: 300px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+  box-shadow: 4px 0 20px rgba(0, 0, 0, 0.5);
+  border-right: 2px solid rgba(233, 69, 96, 0.3);
 }
 
-#tableau-scores h3 {
-  text-align: center;
-  margin-bottom: 15px;
-  font-size: 1.5em;
-  color: #fff;
-  border-bottom: 2px solid #fff;
-  padding-bottom: 10px;
+/* Scrollbar personnalisée */
+#panneau-gauche::-webkit-scrollbar {
+  width: 8px;
 }
 
-#tableau-scores p {
-  margin: 8px 0;
-  font-size: 1.1em;
+#panneau-gauche::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
 }
 
-/* Styles pour les équipes */
-.equipe-rouge {
-  color: #ff4444;
-  font-weight: bold;
-}
-
-.equipe-bleue {
-  color: #4444ff;
-  font-weight: bold;
+#panneau-gauche::-webkit-scrollbar-thumb {
+  background: #e94560;
+  border-radius: 4px;
 }
 
 /* ================================================
-   TABLE DES SCORES
+   CARTES
    ================================================ */
+.carte {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 15px;
+  padding: 20px;
+  margin-bottom: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.carte h3 {
+  font-size: 1.3em;
+  margin-bottom: 15px;
+  color: #e94560;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 2px solid rgba(233, 69, 96, 0.3);
+  padding-bottom: 10px;
+}
+
+/* ================================================
+   TABLEAU DES SCORES
+   ================================================ */
+.table-conteneur {
+  overflow-x: auto;
+  margin-bottom: 15px;
+}
+
 #table-scores {
   width: 100%;
-  border-collapse: collapse;
-  margin-top: 15px;
-  background-color: rgba(255, 255, 255, 0.05);
+  border-collapse: separate;
+  border-spacing: 0;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 10px;
+  overflow: hidden;
 }
 
 #table-scores th,
 #table-scores td {
-  padding: 10px;
+  padding: 12px 8px;
   text-align: center;
-  border: 1px solid #555;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 #table-scores thead th {
-  background-color: rgba(255, 255, 255, 0.1);
-  font-weight: bold;
+  background: rgba(233, 69, 96, 0.3);
+  font-weight: 700;
   text-transform: uppercase;
   font-size: 0.9em;
+  letter-spacing: 1px;
+  color: #fff;
+}
+
+#table-scores tbody tr {
+  transition: background 0.3s ease;
 }
 
 #table-scores tbody tr:hover {
-  background-color: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.1);
 }
 
-#table-scores tfoot th {
-  background-color: rgba(255, 255, 255, 0.15);
+#table-scores tfoot .total-row {
+  background: rgba(233, 69, 96, 0.4);
   font-weight: bold;
   font-size: 1.1em;
-  border-top: 2px solid #fff;
+  border-top: 2px solid #e94560;
+}
+
+#table-scores tfoot .total-row th {
+  padding: 15px 8px;
+}
+
+/* Couleurs des équipes */
+.equipe-rouge {
+  color: #ff6b6b !important;
+  font-weight: bold;
+  text-shadow: 0 0 10px rgba(255, 107, 107, 0.5);
+}
+
+.equipe-bleue {
+  color: #4ecdc4 !important;
+  font-weight: bold;
+  text-shadow: 0 0 10px rgba(78, 205, 196, 0.5);
 }
 
 /* Mise en évidence du meneur */
 .meneur-manche {
-  background-color: rgba(255, 215, 0, 0.2);
-  font-weight: bold;
+  background: linear-gradient(90deg, rgba(255, 215, 0, 0.2), rgba(255, 215, 0, 0.1)) !important;
+  box-shadow: inset 0 0 10px rgba(255, 215, 0, 0.3);
 }
 
 /* ================================================
-   INFORMATIONS ET CONTRÔLES
+   AFFICHAGE DU MENEUR
    ================================================ */
-#info-controles {
-  position: absolute;
-  bottom: 20px;
-  left: 20px;
-  background-color: rgba(0, 0, 0, 0.85);
-  padding: 15px;
+#meneur-display {
+  background: linear-gradient(135deg, rgba(233, 69, 96, 0.2), rgba(233, 69, 96, 0.1));
   border-radius: 10px;
-  border: 2px solid #444;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+  padding: 15px;
+  text-align: center;
+  border: 2px solid rgba(233, 69, 96, 0.3);
 }
 
-#info-controles h4 {
-  margin-bottom: 10px;
-  color: #ffd700;
+#meneur-texte {
   font-size: 1.2em;
-}
-
-#info-controles ul {
-  list-style: none;
-  padding: 0;
-}
-
-#info-controles li {
-  margin: 5px 0;
-  padding: 5px 0;
-  font-size: 0.95em;
-}
-
-#info-controles strong {
-  color: #4CAF50;
-  display: inline-block;
-  min-width: 80px;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
 /* ================================================
-   CONTENEUR STATS (FPS)
+   CONTRÔLES
+   ================================================ */
+.controles-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.controle-item {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+}
+
+.controle-item:hover {
+  background: rgba(233, 69, 96, 0.2);
+  border-color: #e94560;
+  transform: translateX(5px);
+}
+
+.touche {
+  background: linear-gradient(135deg, #e94560, #d63447);
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-weight: bold;
+  font-size: 0.9em;
+  min-width: 60px;
+  text-align: center;
+  box-shadow: 0 4px 8px rgba(233, 69, 96, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.description {
+  flex: 1;
+  font-size: 0.95em;
+  color: #e0e0e0;
+}
+
+/* ================================================
+   STATS FPS
    ================================================ */
 #stats-container {
-  position: absolute;
-  top: 20px;
-  right: 20px;
+  position: fixed;
+  top: 90px;
+  right: 10px;
+  z-index: 1000;
+}
+
+/* ================================================
+   NOTIFICATIONS
+   ================================================ */
+#notification {
+  position: fixed;
+  top: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, #e94560, #d63447);
+  color: white;
+  padding: 20px 40px;
+  border-radius: 15px;
+  font-size: 1.3em;
+  font-weight: bold;
+  box-shadow: 0 8px 32px rgba(233, 69, 96, 0.6);
+  z-index: 2000;
+  display: none;
+  animation: slideDown 0.5s ease;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+#notification.visible {
+  display: block;
 }
 
 /* ================================================
    ANIMATIONS
    ================================================ */
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -171,23 +333,90 @@ body {
 }
 
 .nouvelle-ligne-score {
-  animation: fadeIn 0.5s ease-in-out;
+  animation: fadeIn 0.5s ease;
 }
 
 /* ================================================
-   RESPONSIVE
+   GUI DAT.GUI CUSTOMIZATION
    ================================================ */
-@media (max-width: 768px) {
-  #tableau-scores,
-  #info-controles {
-    font-size: 0.85em;
-    padding: 10px;
-    min-width: 250px;
+.dg.ac {
+  z-index: 1000 !important;
+}
+
+/* ================================================
+   RESPONSIVE (pour petits écrans)
+   ================================================ */
+@media (max-width: 1200px) {
+  #panneau-gauche {
+    width: 280px;
   }
   
-  #table-scores th,
-  #table-scores td {
-    padding: 6px;
-    font-size: 0.9em;
+  #conteneur-webgl {
+    left: 280px;
+  }
+  
+  #entete h1 {
+    font-size: 1.5em;
+  }
+  
+  #info-partie {
+    gap: 15px;
+  }
+  
+  .info-item {
+    padding: 6px 15px;
+  }
+}
+
+@media (max-width: 900px) {
+  #panneau-gauche {
+    width: 250px;
+  }
+  
+  #conteneur-webgl {
+    left: 250px;
+  }
+  
+  .carte {
+    padding: 15px;
+  }
+  
+  #entete {
+    height: 70px;
+    padding: 0 20px;
+  }
+  
+  #conteneur-webgl {
+    top: 70px;
+  }
+}
+
+/* ================================================
+   IMPRESSION (fond blanc pour économiser l'encre)
+   ================================================ */
+@media print {
+  body {
+    background: white;
+    color: black;
+  }
+  
+  #entete {
+    background: white;
+    color: black;
+    border-bottom: 2px solid black;
+  }
+  
+  #panneau-gauche {
+    background: white;
+    color: black;
+  }
+  
+  .carte {
+    background: white;
+    border: 1px solid black;
+  }
+  
+  #conteneur-webgl {
+    display: none;
   }
 }
