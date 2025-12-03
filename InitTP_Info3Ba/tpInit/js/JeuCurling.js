@@ -39,7 +39,7 @@ class JeuCurling {
     this.gui = null;
     this.parametres = {
       trajectoire: 'rectiligne',
-      vitesse: 0.35,
+      vitesse: 0.25,  // Vitesse réduite par défaut
       camera: 'vue-ensemble',
       afficherBalai: true
     };
@@ -272,9 +272,7 @@ class JeuCurling {
     
     // Animation du balai si activé
     if (this.parametres.afficherBalai && this.balai) {
-      setTimeout(() => {
-        this.balai.balayer(pierre.obtenirPosition(), 3000);
-      }, 500);
+      this.balai.commencerBalayage(pierre);
     }
     
     // Cacher la trajectoire pendant le lancer
@@ -294,6 +292,11 @@ class JeuCurling {
     const index = this.pierresEnMouvement.indexOf(pierre);
     if (index > -1) {
       this.pierresEnMouvement.splice(index, 1);
+    }
+    
+    // Arrêter le balai
+    if (this.balai && this.balai.estEnBalayage()) {
+      this.balai.arreterBalayage();
     }
     
     // Si toutes les pierres sont arrêtées, passer au tour suivant
@@ -401,6 +404,9 @@ class JeuCurling {
    * Met à jour les pierres en mouvement
    */
   mettreAJourPierres() {
+    // Réinitialiser le suivi des collisions pour cette frame
+    this.gestionnaireCollisions.reinitialiserCollisions();
+    
     for (let i = this.pierresEnMouvement.length - 1; i >= 0; i--) {
       const pierre = this.pierresEnMouvement[i];
       
@@ -417,6 +423,11 @@ class JeuCurling {
         if (index > -1) this.pierres.splice(index, 1);
         this.pierresEnMouvement.splice(i, 1);
       }
+    }
+    
+    // Mettre à jour le balai
+    if (this.balai) {
+      this.balai.mettreAJour();
     }
   }
   
@@ -439,6 +450,11 @@ class JeuCurling {
    * Réinitialise complètement le jeu
    */
   reinitialiserJeu() {
+    // Arrêter le balai
+    if (this.balai && this.balai.estEnBalayage()) {
+      this.balai.arreterBalayage();
+    }
+    
     // Retirer toutes les pierres
     for (const pierre of this.pierres) {
       this.scene.remove(pierre.obtenirGroupe());
@@ -481,8 +497,11 @@ class JeuCurling {
       .name('Type de trajectoire')
       .onChange(() => this.afficherTrajectoire());
     
-    dossierJeu.add(this.parametres, 'vitesse', 0.1, 0.8, 0.05)
-      .name('Vitesse de lancer');
+    dossierJeu.add(this.parametres, 'vitesse', 0.1, 0.4, 0.05)
+      .name('Vitesse de lancer')
+      .onChange(() => {
+        // Note: vitesse limitée à 0.4 pour éviter le clipping
+      });
     
     dossierJeu.add(this.parametres, 'afficherBalai')
       .name('Afficher le balai');
@@ -623,5 +642,7 @@ window.addEventListener('DOMContentLoaded', () => {
   console.log('  - 1/2/3/4: Changer de caméra');
   console.log('===========================================');
   console.log('📐 Modifiez les courbes de Bézier dans le menu GUI !');
+  console.log('🧹 Le balai suit la pierre automatiquement !');
+  console.log('⚠️ Vitesse max: 0.4 pour éviter le clipping');
   console.log('===========================================');
 });
