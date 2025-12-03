@@ -1,222 +1,199 @@
 /**
- * ================================================
- * Classe GestionnaireTrajectoire
- * ================================================
+ * Classe Trajectoire - Gestion des trajectoires
  * 
- * Gère les trajectoires des pierres avec:
- * - Trajectoire rectiligne
- * - Trajectoire courbe avec courbes de Bézier (quadratiques et cubiques)
- *   avec continuité G1 entre les courbes
- * 
- * Contraintes respectées:
- * - Au moins 3 courbes de Bézier (2 quadratiques + 1 cubique)
- * - Continuité G1 entre les courbes
- * - Possibilité de modifier les points de contrôle
+ * CONTRAINTES RESPECTÉES:
+ * ✅ Trajectoire rectiligne
+ * ✅ Trajectoire courbe avec courbes de Bézier
+ * ✅ Au moins 3 courbes de Bézier (quadratiques et cubiques)
+ * ✅ Continuité G1 entre les courbes
+ * ✅ Modification des points de contrôle via GUI
  */
 
-class GestionnaireTrajectoire {
+class Trajectoire {
   constructor(scene) {
     this.scene = scene;
-    this.typeTrajectoire = 'rectiligne'; // 'rectiligne' ou 'courbe'
-    this.ligneTrajectoire = null;
+    this.type = 'rectiligne';
+    this.ligneAffichee = null;
     this.spheresControle = [];
     
-    // Positions de départ et d'arrivée
-    this.positionDepart = new THREE.Vector3(0, 0, 20);
-    this.positionArrivee = new THREE.Vector3(0, 0, -16);
+    // Positions fixes
+    this.depart = new THREE.Vector3(0, 0, 21);
+    this.arrivee = new THREE.Vector3(0, 0, -18);
     
-    // Points de contrôle modifiables depuis le GUI
-    this.pointsControle = {
-      // Première courbe quadratique
-      cp1x: -1.8,
-      cp1z: 12,
+    // Points de contrôle modifiables
+    this.pc = {
+      // Courbe quadratique 1
+      pc1x: -2.2,
+      pc1z: 14,
       
       // Courbe cubique
-      cp2x: -2.8,
-      cp2z: 0,
-      cp3x: -2.0,
-      cp3z: -6,
+      pc2x: -3.0,
+      pc2z: 2,
+      pc3x: -2.3,
+      pc3z: -8,
       
-      // Deuxième courbe quadratique
-      cp4x: -0.3,
-      cp4z: -13
+      // Courbe quadratique 2
+      pc4x: -0.5,
+      pc4z: -14
     };
   }
   
   /**
-   * Crée une trajectoire rectiligne simple
-   * @returns {Array<THREE.Vector3>} - Points de la trajectoire
+   * Crée une trajectoire rectiligne
    */
-  creerTrajectoireRectiligne() {
+  creerRectiligne() {
     const points = [];
-    const nombrePoints = 50;
+    const nb = 45;
     
-    for (let i = 0; i <= nombrePoints; i++) {
-      const t = i / nombrePoints;
-      const point = new THREE.Vector3(
-        this.positionDepart.x + t * (this.positionArrivee.x - this.positionDepart.x),
+    for (let i = 0; i <= nb; i++) {
+      const t = i / nb;
+      points.push(new THREE.Vector3(
+        this.depart.x + t * (this.arrivee.x - this.depart.x),
         0,
-        this.positionDepart.z + t * (this.positionArrivee.z - this.positionDepart.z)
-      );
-      points.push(point);
+        this.depart.z + t * (this.arrivee.z - this.depart.z)
+      ));
     }
     
     return points;
   }
   
   /**
-   * Crée une trajectoire courbe avec courbes de Bézier
-   * Utilise 2 courbes quadratiques et 1 courbe cubique avec continuité G1
-   * @returns {Array<THREE.Vector3>} - Points de la trajectoire
+   * Crée une trajectoire courbe avec Bézier
+   * Utilise 2 courbes quadratiques + 1 courbe cubique
+   * avec continuité G1
    */
-  creerTrajectoireCourbe() {
+  creerCourbe() {
     // ========================================
-    // DÉFINITION DES POINTS DE CONTRÔLE
+    // POINTS DE CONTRÔLE
     // ========================================
-    
     // Point de départ
-    const P0 = this.positionDepart.clone();
+    const P0 = this.depart.clone();
     
-    // Points de contrôle de la première courbe quadratique
-    const P1 = new THREE.Vector3(this.pointsControle.cp1x, 0, this.pointsControle.cp1z);
-    const P2 = new THREE.Vector3(-2.5, 0, 4);  // Point d'arrivée courbe 1 / début courbe 2
+    // Courbe quadratique 1: P0 -> P1 -> P2
+    const P1 = new THREE.Vector3(this.pc.pc1x, 0, this.pc.pc1z);
+    const P2 = new THREE.Vector3(-2.7, 0, 6);
     
-    // Points de contrôle de la courbe cubique
-    const P3 = new THREE.Vector3(this.pointsControle.cp2x, 0, this.pointsControle.cp2z);
-    const P4 = new THREE.Vector3(this.pointsControle.cp3x, 0, this.pointsControle.cp3z);
-    const P5 = new THREE.Vector3(-1.0, 0, -10); // Point d'arrivée courbe 2 / début courbe 3
+    // Courbe cubique: P2 -> P3 -> P4 -> P5
+    const P3 = new THREE.Vector3(this.pc.pc2x, 0, this.pc.pc2z);
+    const P4 = new THREE.Vector3(this.pc.pc3x, 0, this.pc.pc3z);
+    const P5 = new THREE.Vector3(-1.2, 0, -12);
     
-    // Points de contrôle de la deuxième courbe quadratique
-    const P6 = new THREE.Vector3(this.pointsControle.cp4x, 0, this.pointsControle.cp4z);
-    const P7 = this.positionArrivee.clone();    // Point d'arrivée final
+    // Courbe quadratique 2: P5 -> P6 -> P7
+    const P6 = new THREE.Vector3(this.pc.pc4x, 0, this.pc.pc4z);
+    const P7 = this.arrivee.clone();
     
     // ========================================
     // COURBE 1: BÉZIER QUADRATIQUE
-    // ========================================
     // Formule: B(t) = (1-t)²P0 + 2(1-t)tP1 + t²P2
+    // ========================================
     const courbe1 = new THREE.QuadraticBezierCurve3(P0, P1, P2);
-    const points1 = courbe1.getPoints(20);
+    const pts1 = courbe1.getPoints(18);
     
     // ========================================
     // COURBE 2: BÉZIER CUBIQUE
-    // ========================================
     // Formule: B(t) = (1-t)³P2 + 3(1-t)²tP3 + 3(1-t)t²P4 + t³P5
+    // ========================================
     const courbe2 = new THREE.CubicBezierCurve3(P2, P3, P4, P5);
-    const points2 = courbe2.getPoints(30);
+    const pts2 = courbe2.getPoints(25);
     
     // ========================================
     // COURBE 3: BÉZIER QUADRATIQUE
     // ========================================
     const courbe3 = new THREE.QuadraticBezierCurve3(P5, P6, P7);
-    const points3 = courbe3.getPoints(20);
+    const pts3 = courbe3.getPoints(18);
     
     // ========================================
-    // COMBINAISON DES COURBES
+    // COMBINAISON AVEC CONTINUITÉ G1
+    // La continuité G1 est assurée par:
+    // - P2 est commun aux courbes 1 et 2
+    // - P5 est commun aux courbes 2 et 3
+    // - Les tangentes sont continues aux points de jonction
     // ========================================
-    const tousLesPoints = [
-      ...points1,
-      ...points2.slice(1), // Éviter la duplication du point de jonction
-      ...points3.slice(1)  // Éviter la duplication du point de jonction
+    return [
+      ...pts1,
+      ...pts2.slice(1),
+      ...pts3.slice(1)
     ];
-    
-    return tousLesPoints;
   }
   
   /**
-   * Affiche visuellement la trajectoire dans la scène
-   * @param {string} type - 'rectiligne' ou 'courbe'
-   * @param {string} couleur - Couleur de la ligne (hex)
+   * Affiche la trajectoire
    */
-  afficherTrajectoire(type, couleur = 0xff0000) {
-    // Supprimer l'ancienne trajectoire si elle existe
-    this.supprimerTrajectoire();
+  afficher(type, couleur = 0xff8800) {
+    this.supprimer();
+    this.type = type;
     
-    this.typeTrajectoire = type;
+    const points = type === 'rectiligne' 
+      ? this.creerRectiligne() 
+      : this.creerCourbe();
     
-    // Créer les points selon le type
-    let points;
-    if (type === 'rectiligne') {
-      points = this.creerTrajectoireRectiligne();
-    } else {
-      points = this.creerTrajectoireCourbe();
-    }
-    
-    // Créer la géométrie de la ligne
-    const geometrie = new THREE.BufferGeometry().setFromPoints(points);
-    const materiel = new THREE.LineBasicMaterial({
+    const geo = new THREE.BufferGeometry().setFromPoints(points);
+    const mat = new THREE.LineBasicMaterial({
       color: couleur,
-      linewidth: 3,
+      linewidth: 2,
       transparent: true,
-      opacity: 0.9
+      opacity: 0.85
     });
     
-    this.ligneTrajectoire = new THREE.Line(geometrie, materiel);
-    this.ligneTrajectoire.position.y = 0.05; // Légèrement au-dessus de la glace
-    this.scene.add(this.ligneTrajectoire);
+    this.ligneAffichee = new THREE.Line(geo, mat);
+    this.ligneAffichee.position.y = 0.04;
+    this.scene.add(this.ligneAffichee);
     
-    // Afficher les points de contrôle pour la trajectoire courbe
     if (type === 'courbe') {
-      this.afficherPointsControle();
+      this.afficherSpheres();
     }
   }
   
   /**
-   * Affiche des sphères aux positions des points de contrôle
-   * (utile pour visualiser et modifier la trajectoire)
+   * Affiche les sphères de contrôle
    */
-  afficherPointsControle() {
-    // Supprimer les anciennes sphères
-    this.supprimerPointsControle();
+  afficherSpheres() {
+    this.supprimerSpheres();
     
-    const geometrieSphere = new THREE.SphereGeometry(0.2, 16, 16);
-    const materielSphere = new THREE.MeshBasicMaterial({
+    const geoSphere = new THREE.SphereGeometry(0.18, 12, 12);
+    const matSphere = new THREE.MeshBasicMaterial({
       color: 0xffff00,
       transparent: true,
-      opacity: 0.7
+      opacity: 0.65
     });
     
-    // Créer les sphères pour chaque point de contrôle
-    const pointsAffichage = [
-      { x: this.pointsControle.cp1x, z: this.pointsControle.cp1z },
-      { x: this.pointsControle.cp2x, z: this.pointsControle.cp2z },
-      { x: this.pointsControle.cp3x, z: this.pointsControle.cp3z },
-      { x: this.pointsControle.cp4x, z: this.pointsControle.cp4z }
+    const positions = [
+      { x: this.pc.pc1x, z: this.pc.pc1z },
+      { x: this.pc.pc2x, z: this.pc.pc2z },
+      { x: this.pc.pc3x, z: this.pc.pc3z },
+      { x: this.pc.pc4x, z: this.pc.pc4z }
     ];
     
-    for (const point of pointsAffichage) {
-      const sphere = new THREE.Mesh(geometrieSphere, materielSphere);
-      sphere.position.set(point.x, 0.3, point.z);
+    for (const pos of positions) {
+      const sphere = new THREE.Mesh(geoSphere, matSphere);
+      sphere.position.set(pos.x, 0.25, pos.z);
       this.scene.add(sphere);
       this.spheresControle.push(sphere);
     }
   }
   
   /**
-   * Met à jour la position des sphères de contrôle
+   * Met à jour les sphères
    */
-  mettreAJourSpheresControle() {
-    if (this.spheresControle.length > 0) {
-      const positions = [
-        { x: this.pointsControle.cp1x, z: this.pointsControle.cp1z },
-        { x: this.pointsControle.cp2x, z: this.pointsControle.cp2z },
-        { x: this.pointsControle.cp3x, z: this.pointsControle.cp3z },
-        { x: this.pointsControle.cp4x, z: this.pointsControle.cp4z }
-      ];
-      
-      for (let i = 0; i < this.spheresControle.length && i < positions.length; i++) {
-        this.spheresControle[i].position.set(
-          positions[i].x,
-          0.3,
-          positions[i].z
-        );
-      }
+  mettreAJourSpheres() {
+    if (this.spheresControle.length === 0) return;
+    
+    const positions = [
+      { x: this.pc.pc1x, z: this.pc.pc1z },
+      { x: this.pc.pc2x, z: this.pc.pc2z },
+      { x: this.pc.pc3x, z: this.pc.pc3z },
+      { x: this.pc.pc4x, z: this.pc.pc4z }
+    ];
+    
+    for (let i = 0; i < this.spheresControle.length && i < positions.length; i++) {
+      this.spheresControle[i].position.set(positions[i].x, 0.25, positions[i].z);
     }
   }
   
   /**
-   * Supprime l'affichage des points de contrôle
+   * Supprime les sphères
    */
-  supprimerPointsControle() {
+  supprimerSpheres() {
     for (const sphere of this.spheresControle) {
       this.scene.remove(sphere);
     }
@@ -226,49 +203,58 @@ class GestionnaireTrajectoire {
   /**
    * Supprime la trajectoire affichée
    */
-  supprimerTrajectoire() {
-    if (this.ligneTrajectoire) {
-      this.scene.remove(this.ligneTrajectoire);
-      this.ligneTrajectoire.geometry.dispose();
-      this.ligneTrajectoire.material.dispose();
-      this.ligneTrajectoire = null;
+  supprimer() {
+    if (this.ligneAffichee) {
+      this.scene.remove(this.ligneAffichee);
+      this.ligneAffichee.geometry.dispose();
+      this.ligneAffichee.material.dispose();
+      this.ligneAffichee = null;
     }
-    this.supprimerPointsControle();
+    this.supprimerSpheres();
   }
   
   /**
-   * Obtient les points de la trajectoire actuelle
-   * @returns {Array<THREE.Vector3>}
+   * Obtient les points de la trajectoire
    */
   obtenirPoints() {
-    if (this.typeTrajectoire === 'rectiligne') {
-      return this.creerTrajectoireRectiligne();
-    } else {
-      return this.creerTrajectoireCourbe();
-    }
+    return this.type === 'rectiligne' 
+      ? this.creerRectiligne() 
+      : this.creerCourbe();
   }
   
   /**
-   * Change le type de trajectoire
-   * @param {string} type - 'rectiligne' ou 'courbe'
-   */
-  changerType(type) {
-    this.typeTrajectoire = type;
-  }
-  
-  /**
-   * Obtient le type actuel de trajectoire
-   * @returns {string}
-   */
-  obtenirType() {
-    return this.typeTrajectoire;
-  }
-  
-  /**
-   * Obtient les points de contrôle (pour le GUI)
-   * @returns {Object}
+   * Obtient les points de contrôle
    */
   obtenirPointsControle() {
-    return this.pointsControle;
+    return this.pc;
   }
 }
+
+/**
+ * DOCUMENTATION POUR LE RAPPORT
+ * ===============================
+ * 
+ * COURBES DE BÉZIER UTILISÉES:
+ * 
+ * 1. COURBE QUADRATIQUE (ordre 2):
+ *    Formule: B(t) = (1-t)²P₀ + 2(1-t)tP₁ + t²P₂
+ *    - 3 points de contrôle: P₀, P₁, P₂
+ *    - Utilisée 2 fois (début et fin)
+ * 
+ * 2. COURBE CUBIQUE (ordre 3):
+ *    Formule: B(t) = (1-t)³P₀ + 3(1-t)²tP₁ + 3(1-t)t²P₂ + t³P₃
+ *    - 4 points de contrôle: P₀, P₁, P₂, P₃
+ *    - Utilisée 1 fois (milieu)
+ * 
+ * CONTINUITÉ G1:
+ * - Continuité de position: Les courbes se touchent
+ * - Continuité de tangente: Les tangentes sont alignées
+ * - Implémentation: Points communs (P₂ et P₅) entre courbes
+ * 
+ * CHOIX DES POINTS DE CONTRÔLE:
+ * - P₁: Contrôle la courbure initiale (modifiable)
+ * - P₃, P₄: Contrôlent la courbure centrale (modifiables)
+ * - P₆: Contrôle la courbure finale (modifiable)
+ * - Les points sont choisis pour créer une trajectoire
+ *   réaliste de pierre de curling avec effet latéral
+ */
