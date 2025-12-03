@@ -54,16 +54,25 @@ body {
   background: rgba(255, 255, 255, 0.1);
   border-radius: 10px;
   border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+}
+
+.info-item:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .info-item .label {
   font-size: 0.85em;
   color: #b0b0b0;
   margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
 .info-item .valeur {
-  font-size: 1.3em;
+  font-size: 1.4em;
   font-weight: bold;
 }
 
@@ -115,6 +124,10 @@ body {
   border-radius: 4px;
 }
 
+#panneau-gauche::-webkit-scrollbar-thumb:hover {
+  background: #d63447;
+}
+
 /* ================================================
    CARTES
    ================================================ */
@@ -126,6 +139,13 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.15);
   backdrop-filter: blur(10px);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s ease;
+}
+
+.carte:hover {
+  background: rgba(255, 255, 255, 0.12);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
 }
 
 .carte h3 {
@@ -145,6 +165,7 @@ body {
 .table-conteneur {
   overflow-x: auto;
   margin-bottom: 15px;
+  border-radius: 10px;
 }
 
 #table-scores {
@@ -170,14 +191,18 @@ body {
   font-size: 0.9em;
   letter-spacing: 1px;
   color: #fff;
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
 #table-scores tbody tr {
-  transition: background 0.3s ease;
+  transition: all 0.3s ease;
 }
 
 #table-scores tbody tr:hover {
   background: rgba(255, 255, 255, 0.1);
+  transform: scale(1.02);
 }
 
 #table-scores tfoot .total-row {
@@ -204,28 +229,53 @@ body {
   text-shadow: 0 0 10px rgba(78, 205, 196, 0.5);
 }
 
+/* Animation pour nouvelle ligne */
+@keyframes slideInFromLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.nouvelle-ligne-score {
+  animation: slideInFromLeft 0.5s ease;
+}
+
 /* Mise en évidence du meneur */
 .meneur-manche {
-  background: linear-gradient(90deg, rgba(255, 215, 0, 0.2), rgba(255, 215, 0, 0.1)) !important;
-  box-shadow: inset 0 0 10px rgba(255, 215, 0, 0.3);
+  background: linear-gradient(90deg, rgba(255, 215, 0, 0.25), rgba(255, 215, 0, 0.1)) !important;
+  box-shadow: inset 0 0 15px rgba(255, 215, 0, 0.4);
+  border: 1px solid rgba(255, 215, 0, 0.5);
 }
 
 /* ================================================
    AFFICHAGE DU MENEUR
    ================================================ */
 #meneur-display {
-  background: linear-gradient(135deg, rgba(233, 69, 96, 0.2), rgba(233, 69, 96, 0.1));
-  border-radius: 10px;
-  padding: 15px;
+  background: linear-gradient(135deg, rgba(233, 69, 96, 0.25), rgba(233, 69, 96, 0.15));
+  border-radius: 12px;
+  padding: 18px;
   text-align: center;
-  border: 2px solid rgba(233, 69, 96, 0.3);
+  border: 2px solid rgba(233, 69, 96, 0.4);
+  box-shadow: 0 6px 20px rgba(233, 69, 96, 0.3);
+  transition: all 0.3s ease;
+}
+
+#meneur-display:hover {
+  transform: scale(1.03);
+  box-shadow: 0 8px 25px rgba(233, 69, 96, 0.5);
 }
 
 #meneur-texte {
-  font-size: 1.2em;
+  font-size: 1.25em;
   font-weight: bold;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 1.5px;
+  line-height: 1.5;
 }
 
 /* ================================================
@@ -252,6 +302,7 @@ body {
   background: rgba(233, 69, 96, 0.2);
   border-color: #e94560;
   transform: translateX(5px);
+  box-shadow: -4px 0 12px rgba(233, 69, 96, 0.3);
 }
 
 .touche {
@@ -264,6 +315,12 @@ body {
   text-align: center;
   box-shadow: 0 4px 8px rgba(233, 69, 96, 0.4);
   border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.2s ease;
+}
+
+.controle-item:hover .touche {
+  transform: scale(1.1);
+  box-shadow: 0 6px 12px rgba(233, 69, 96, 0.6);
 }
 
 .description {
@@ -299,28 +356,30 @@ body {
   box-shadow: 0 8px 32px rgba(233, 69, 96, 0.6);
   z-index: 2000;
   display: none;
-  animation: slideDown 0.5s ease;
   border: 2px solid rgba(255, 255, 255, 0.3);
+  text-align: center;
+  min-width: 300px;
 }
 
 #notification.visible {
   display: block;
+  animation: notificationSlide 0.5s ease;
+}
+
+@keyframes notificationSlide {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-50px) scale(0.8);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
 }
 
 /* ================================================
    ANIMATIONS
    ================================================ */
-@keyframes slideDown {
-  from {
-    opacity: 0;
-    transform: translateX(-50%) translateY(-50px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0);
-  }
-}
-
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -332,8 +391,22 @@ body {
   }
 }
 
-.nouvelle-ligne-score {
-  animation: fadeIn 0.5s ease;
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+/* Animation pour les valeurs qui changent */
+.valeur {
+  transition: all 0.3s ease;
+}
+
+.valeur-change {
+  animation: pulse 0.6s ease;
 }
 
 /* ================================================
@@ -343,8 +416,12 @@ body {
   z-index: 1000 !important;
 }
 
+.dg.main {
+  text-shadow: none !important;
+}
+
 /* ================================================
-   RESPONSIVE (pour petits écrans)
+   RESPONSIVE
    ================================================ */
 @media (max-width: 1200px) {
   #panneau-gauche {
@@ -389,10 +466,18 @@ body {
   #conteneur-webgl {
     top: 70px;
   }
+  
+  #entete h1 {
+    font-size: 1.3em;
+  }
+  
+  .info-item .valeur {
+    font-size: 1.2em;
+  }
 }
 
 /* ================================================
-   IMPRESSION (fond blanc pour économiser l'encre)
+   IMPRESSION (fond blanc)
    ================================================ */
 @media print {
   body {
@@ -409,6 +494,7 @@ body {
   #panneau-gauche {
     background: white;
     color: black;
+    border-right: 2px solid black;
   }
   
   .carte {
@@ -416,7 +502,26 @@ body {
     border: 1px solid black;
   }
   
+  .carte h3 {
+    color: black;
+  }
+  
   #conteneur-webgl {
     display: none;
+  }
+  
+  .equipe-rouge {
+    color: red !important;
+    text-shadow: none;
+  }
+  
+  .equipe-bleue {
+    color: blue !important;
+    text-shadow: none;
+  }
+  
+  #notification,
+  #stats-container {
+    display: none !important;
   }
 }
