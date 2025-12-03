@@ -15,6 +15,13 @@
 class Balai {
   constructor() {
     this.groupe = new THREE.Group();
+    this.enBalayage = false;
+    this.pierreASuivre = null;
+    this.offsetDevant = 0.8; // Distance devant la pierre
+    this.amplitudeBalayage = 0.4; // Amplitude du mouvement latéral
+    this.vitesseBalayage = 0.005; // Vitesse du balayage
+    this.tempsBalayage = 0;
+    
     this.creerBalai();
   }
   
@@ -167,58 +174,75 @@ class Balai {
   }
   
   /**
-   * Positionne le balai à un endroit spécifique
-   * @param {THREE.Vector3} position
+   * Démarre le balayage en suivant une pierre
+   * @param {Pierre} pierre - La pierre à suivre
    */
-  positionner(position) {
-    this.groupe.position.copy(position);
+  commencerBalayage(pierre) {
+    this.pierreASuivre = pierre;
+    this.enBalayage = true;
+    this.tempsBalayage = 0;
+    this.groupe.visible = true;
+    
+    // Incliner le balai vers l'avant
+    this.groupe.rotation.x = Math.PI / 8;
   }
   
   /**
-   * Anime le balayage du balai
-   * @param {THREE.Vector3} positionPierre - Position de la pierre à balayer
-   * @param {number} duree - Durée du balayage en ms
+   * Arrête le balayage
    */
-  balayer(positionPierre, duree = 2000) {
-    // Positionner le balai légèrement devant la pierre
-    this.groupe.position.set(
-      positionPierre.x + 0.3,
-      0,
-      positionPierre.z - 0.5
-    );
+  arreterBalayage() {
+    this.enBalayage = false;
+    this.pierreASuivre = null;
+    this.groupe.visible = false;
+    this.groupe.rotation.x = 0;
+    this.groupe.rotation.z = 0;
+  }
+  
+  /**
+   * Met à jour la position du balai (appelé à chaque frame)
+   */
+  mettreAJour() {
+    if (!this.enBalayage || !this.pierreASuivre) return;
     
-    // Incliner le balai vers l'avant
-    this.groupe.rotation.x = Math.PI / 6;
+    // Vérifier si la pierre est encore en mouvement
+    if (!this.pierreASuivre.enMouvement) {
+      this.arreterBalayage();
+      return;
+    }
     
-    // Rendre visible
-    this.groupe.visible = true;
+    const positionPierre = this.pierreASuivre.obtenirPosition();
+    const vitessePierre = this.pierreASuivre.vitesse;
     
-    // Animation de balayage (mouvement de va-et-vient)
-    const debut = Date.now();
+    // Calculer la direction du mouvement de la pierre
+    let direction;
+    if (vitessePierre.length() > 0.001) {
+      direction = vitessePierre.clone().normalize();
+    } else {
+      // Si la pierre est presque arrêtée, utiliser la direction Z négative
+      direction = new THREE.Vector3(0, 0, -1);
+    }
     
-    const animer = () => {
-      const temps = Date.now() - debut;
-      const progression = (temps % 500) / 500; // Cycle de 500ms
-      
-      // Mouvement latéral (gauche-droite)
-      const offset = Math.sin(progression * Math.PI * 2) * 0.2;
-      this.groupe.position.x = positionPierre.x + offset;
-      
-      // Rotation du balai
-      this.groupe.rotation.z = Math.sin(progression * Math.PI * 2) * 0.15;
-      
-      // Continuer l'animation
-      if (temps < duree) {
-        requestAnimationFrame(animer);
-      } else {
-        // Cacher le balai après l'animation
-        this.groupe.visible = false;
-        this.groupe.rotation.x = 0;
-        this.groupe.rotation.z = 0;
-      }
-    };
+    // Positionner le balai DEVANT la pierre
+    const positionBalai = positionPierre.clone();
+    positionBalai.add(direction.clone().multiplyScalar(-this.offsetDevant));
     
-    animer();
+    // Ajouter le mouvement de balayage latéral (gauche-droite)
+    this.tempsBalayage += this.vitesseBalayage;
+    const offsetLateral = Math.sin(this.tempsBalayage * Math.PI * 2) * this.amplitudeBalayage;
+    
+    // Calculer le vecteur perpendiculaire pour le mouvement latéral
+    const perpendiculaire = new THREE.Vector3(-direction.z, 0, direction.x);
+    positionBalai.add(perpendiculaire.multiplyScalar(offsetLateral));
+    
+    // Appliquer la position
+    this.groupe.position.copy(positionBalai);
+    
+    // Rotation du balai pour suivre la direction
+    const angle = Math.atan2(direction.x, direction.z);
+    this.groupe.rotation.y = angle;
+    
+    // Rotation latérale pour l'effet de balayage
+    this.groupe.rotation.z = Math.sin(this.tempsBalayage * Math.PI * 2) * 0.2;
   }
   
   /**
@@ -227,6 +251,14 @@ class Balai {
    */
   definirVisibilite(visible) {
     this.groupe.visible = visible;
+  }
+  
+  /**
+   * Vérifie si le balai est en train de balayer
+   * @returns {boolean}
+   */
+  estEnBalayage() {
+    return this.enBalayage;
   }
 }
 
