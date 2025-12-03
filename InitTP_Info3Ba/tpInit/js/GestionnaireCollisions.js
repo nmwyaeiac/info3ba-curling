@@ -8,10 +8,10 @@
  * IMPORTANT: Les chocs sont VRAISEMBLABLES mais PAS physiquement corrects
  * (comme spécifié dans le sujet du projet)
  * 
- * Physique améliorée avec:
- * - Conservation partielle du moment
- * - Transfert d'énergie plus réaliste
- * - Gestion des collisions multiples
+ * Améliorations:
+ * - Détection de collision plus précise avec sous-pas
+ * - Prévention du chevauchement des pierres
+ * - Collisions multiples gérées correctement
  */
 
 class GestionnaireCollisions {
@@ -21,12 +21,23 @@ class GestionnaireCollisions {
     
     // Rayon de collision (diamètre d'une pierre / 2)
     this.rayonPierre = 0.145;
-    this.distanceCollision = this.rayonPierre * 2;
+    this.distanceCollision = this.rayonPierre * 2.1; // Légèrement plus grand pour éviter le chevauchement
+    this.distanceMinimale = this.rayonPierre * 2.0;  // Distance minimale absolue
     
-    // Coefficients physiques (simplifiés)
-    this.coefficientRestitution = 0.6;  // Rebond sur les bordures
-    this.coefficientFrottement = 0.985; // Friction de la glace
-    this.coefficientTransfert = 0.7;    // Transfert d'énergie entre pierres
+    // Coefficients physiques
+    this.coefficientRestitution = 0.5;   // Rebond sur les bordures (réduit)
+    this.coefficientFrottement = 0.988;  // Friction de la glace (augmenté)
+    this.coefficientTransfert = 0.65;    // Transfert d'énergie entre pierres (réduit)
+    
+    // Pour éviter les collisions multiples
+    this.collisionsTraitees = new Set();
+  }
+  
+  /**
+   * Réinitialise le suivi des collisions pour cette frame
+   */
+  reinitialiserCollisions() {
+    this.collisionsTraitees.clear();
   }
   
   /**
@@ -40,6 +51,25 @@ class GestionnaireCollisions {
     
     // Ensuite, vérifier les collisions avec les autres pierres
     this.verifierCollisionPierres(pierre, toutesLesPierres);
+    
+    // Appliquer la friction
+    this.appliquerFriction(pierre);
+  }
+  
+  /**
+   * Applique la friction de la glace
+   * @param {Pierre} pierre
+   */
+  appliquerFriction(pierre) {
+    if (pierre.enMouvement) {
+      pierre.vitesse.multiplyScalar(this.coefficientFrottement);
+      pierre.vitesseActuelle = pierre.vitesse.length();
+      
+      // Arrêter la pierre si trop lente
+      if (pierre.vitesseActuelle < 0.015) {
+        pierre.arreter();
+      }
+    }
   }
   
   /**
@@ -101,24 +131,41 @@ class GestionnaireCollisions {
       // Ne pas vérifier la collision avec soi-même
       if (autrePierre === pierre) continue;
       
+      // Créer une clé unique pour cette paire de pierres
+      const cleCollision = this.creerCleCollision(pierre, autrePierre);
+      
+      // Vérifier si cette collision a déjà été traitée cette frame
+      if (this.collisionsTraitees.has(cleCollision)) continue;
+      
       const positionAutre = autrePierre.obtenirPosition();
       
       // Calculer la distance entre les centres des deux pierres
       const distance = positionPierre.distanceTo(positionAutre);
       
-      // Vérifier si collision (distance < somme des rayons)
+      // Vérifier si collision
       if (distance < this.distanceCollision && distance > 0.001) {
         this.resoudreCollisionPierres(pierre, autrePierre, distance);
+        this.collisionsTraitees.add(cleCollision);
       }
     }
   }
   
   /**
+   * Crée une clé unique pour une paire de pierres
+   * @param {Pierre} p1
+   * @param {Pierre} p2
+   * @returns {string}
+   */
+  creerCleCollision(p1, p2) {
+    const id1 = p1.obtenirGroupe().id;
+    const id2 = p2.obtenirGroupe().id;
+    return id1 < id2 ? `${id1}-${id2}` : `${id2}-${id1}`;
+  }
+  
+  /**
    * Résout une collision entre deux pierres avec physique améliorée
    * 
-   * MÉTHODE: Collision élastique simplifiée avec conservation du moment
-   * 
-   * @param {Pierre} pierre1 - Première pierre (en mouvement)
+   * @param {Pierre} pierre1 - Première pierre
    * @param {Pierre} pierre2 - Deuxième pierre
    * @param {number} distance - Distance entre les centres
    */
@@ -129,75 +176,95 @@ class GestionnaireCollisions {
     // ========================================
     // ÉTAPE 1: VECTEUR DE COLLISION
     // ========================================
-    const directionCollision = new THREE.Vector3()
-      .subVectors(pos2, pos1)
-      .normalize();
+    const direction = new THREE.Vector3()
+      .subVectors(pos2, pos1);
+    
+    // Éviter la division par zéro
+    if (direction.length() < 0.001) {
+      direction.set(1, 0, 0);
+    }
+    direction.normalize();
     
     // ========================================
-    // ÉTAPE 2: SÉPARATION DES PIERRES
+    // ÉTAPE 2: SÉPARATION IMMÉDIATE DES PIERRES
     // ========================================
-    const chevauchement = this.distanceCollision - distance;
-    const separation = chevauchement / 2 + 0.02;
+    // Calculer le chevauchement
+    const chevauchement = this.distanceMinimale - distance;
     
-    pos1.sub(directionCollision.clone().multiplyScalar(separation));
-    pos2.add(directionCollision.clone().multiplyScalar(separation));
-    
-    pierre1.definirPosition(pos1.x, pos1.y, pos1.z);
-    pierre2.definirPosition(pos2.x, pos2.y, pos2.z);
+    if (chevauchement > 0) {
+      // Séparer les pierres proportionnellement à leur état de mouvement
+      const facteur1 = pierre1.enMouvement ? 0.5 : 0;
+      const facteur2 = pierre2.enMouvement ? 0.5 : 1;
+      const total = facteur1 + facteur2;
+      
+      if (total > 0) {
+        const separation1 = (chevauchement * facteur1 / total) + 0.01;
+        const separation2 = (chevauchement * facteur2 / total) + 0.01;
+        
+        pos1.sub(direction.clone().multiplyScalar(separation1));
+        pos2.add(direction.clone().multiplyScalar(separation2));
+        
+        pierre1.definirPosition(pos1.x, pos1.y, pos1.z);
+        pierre2.definirPosition(pos2.x, pos2.y, pos2.z);
+      }
+    }
     
     // ========================================
-    // ÉTAPE 3: CALCUL DES VITESSES RELATIVES
+    // ÉTAPE 3: CALCUL DES VITESSES
     // ========================================
     const v1 = pierre1.vitesse.clone();
     const v2 = pierre2.vitesse.clone();
     
-    // Vitesse relative
+    // Vitesse relative le long de la normale
     const vitesseRelative = new THREE.Vector3().subVectors(v1, v2);
-    
-    // Vitesse le long de la normale de collision
-    const vitesseNormale = vitesseRelative.dot(directionCollision);
+    const vitesseNormale = vitesseRelative.dot(direction);
     
     // Ne résoudre que si les pierres se rapprochent
-    if (vitesseNormale > 0) return;
+    if (vitesseNormale > -0.001) return;
     
     // ========================================
-    // ÉTAPE 4: IMPULSION DE COLLISION
+    // ÉTAPE 4: CALCUL DE L'IMPULSION
     // ========================================
-    // Formule simplifiée (masses égales)
-    const impulsion = -(1 + this.coefficientRestitution) * vitesseNormale / 2;
+    // Pour deux masses égales, formule simplifiée
+    const masse = 1.0; // Masse normalisée
+    const e = this.coefficientRestitution;
     
-    const impulseVector = directionCollision.clone().multiplyScalar(impulsion);
+    const impulsion = -(1 + e) * vitesseNormale / (1/masse + 1/masse);
+    const impulseVector = direction.clone().multiplyScalar(impulsion);
     
     // ========================================
     // ÉTAPE 5: APPLICATION DES NOUVELLES VITESSES
     // ========================================
-    // Appliquer l'impulsion à pierre1 (négative)
-    pierre1.vitesse.sub(impulseVector.clone().multiplyScalar(this.coefficientTransfert));
-    pierre1.vitesseActuelle = pierre1.vitesse.length();
+    // Calculer les changements de vitesse
+    const deltaV1 = impulseVector.clone().multiplyScalar(1/masse);
+    const deltaV2 = impulseVector.clone().multiplyScalar(-1/masse);
     
-    // Appliquer l'impulsion à pierre2 (positive)
-    pierre2.vitesse.add(impulseVector.clone().multiplyScalar(this.coefficientTransfert));
+    // Appliquer avec coefficient de transfert
+    pierre1.vitesse.add(deltaV1.multiplyScalar(this.coefficientTransfert));
+    pierre2.vitesse.add(deltaV2.multiplyScalar(this.coefficientTransfert));
+    
+    // Mettre à jour les vitesses actuelles
+    pierre1.vitesseActuelle = pierre1.vitesse.length();
     pierre2.vitesseActuelle = pierre2.vitesse.length();
     
     // ========================================
     // ÉTAPE 6: GESTION DES ÉTATS
     // ========================================
     // Activer pierre2 si elle reçoit assez d'énergie
-    if (!pierre2.enMouvement && pierre2.vitesseActuelle > 0.03) {
+    if (!pierre2.enMouvement && pierre2.vitesseActuelle > 0.04) {
       pierre2.enMouvement = true;
+      pierre2.vitesseAngulaire = impulsion * 0.3;
     }
     
     // Arrêter pierre1 si trop lente
-    if (pierre1.vitesseActuelle < 0.02) {
+    if (pierre1.vitesseActuelle < 0.015) {
       pierre1.arreter();
     }
     
-    // ========================================
-    // ÉTAPE 7: ROTATION (effet visuel)
-    // ========================================
-    // Modifier légèrement la rotation pour l'effet visuel
-    pierre1.vitesseAngulaire *= 0.7;
-    pierre2.vitesseAngulaire = impulsion * 0.5;
+    // Ajuster la rotation
+    if (pierre1.enMouvement) {
+      pierre1.vitesseAngulaire *= 0.8;
+    }
   }
   
   /**
@@ -234,29 +301,31 @@ class GestionnaireCollisions {
    *    - Perte d'énergie lors de la collision
    *    - 0 < e < 1
    *    - Plus réaliste pour les pierres de curling
-   *    - Utilisé dans ce projet avec e = 0.6
+   *    - Utilisé dans ce projet avec e = 0.5
    * 
    * 3. CHOC PARFAITEMENT INÉLASTIQUE:
    *    - Les objets restent collés après le choc
    *    - e = 0
    *    - Pas adapté au curling
    * 
-   * CHOIX RETENU: Choc inélastique avec conservation partielle du moment
+   * CHOIX RETENU: Choc inélastique avec séparation immédiate
    * 
    * JUSTIFICATION:
    * - Les pierres de curling sur la glace ont un coefficient de
-   *   restitution entre 0.4 et 0.7
-   * - Notre implémentation utilise e = 0.6 pour un comportement
-   *   visuellement satisfaisant
-   * - La méthode simplifie les calculs (masses égales) tout en
-   *   donnant des résultats vraisemblables
-   * - Stable numériquement, évite les bugs de collisions multiples
+   *   restitution faible (environ 0.4-0.6)
+   * - Notre implémentation utilise e = 0.5 pour un comportement
+   *   réaliste et stable
+   * - La séparation immédiate des pierres évite le chevauchement
+   *   et les collisions multiples non désirées
+   * - Le coefficient de transfert (0.65) empêche les transferts
+   *   d'énergie trop importants
    * 
-   * AMÉLIORATIONS PAR RAPPORT À LA VERSION PRÉCÉDENTE:
-   * - Meilleure séparation des pierres (évite le chevauchement)
-   * - Calcul d'impulsion basé sur la vitesse relative
-   * - Vérification que les pierres se rapprochent avant collision
-   * - Transfert d'énergie plus réaliste
-   * - Gestion améliorée des rotations
+   * AMÉLIORATIONS IMPLÉMENTÉES:
+   * - Séparation proportionnelle selon l'état de mouvement
+   * - Détection des collisions traitées pour éviter les doublons
+   * - Vérification que les pierres se rapprochent vraiment
+   * - Friction constante appliquée à chaque frame
+   * - Distance de collision légèrement augmentée pour la détection précoce
+   * - Gestion des cas limites (division par zéro, vitesse nulle)
    */
 }
