@@ -19,12 +19,28 @@ class GestionnaireTrajectoire {
     this.scene = scene;
     this.typeTrajectoire = 'rectiligne'; // 'rectiligne' ou 'courbe'
     this.ligneTrajectoire = null;
-    this.pointsControle = [];
     this.spheresControle = [];
     
     // Positions de départ et d'arrivée
     this.positionDepart = new THREE.Vector3(0, 0, 20);
     this.positionArrivee = new THREE.Vector3(0, 0, -16);
+    
+    // Points de contrôle modifiables depuis le GUI
+    this.pointsControle = {
+      // Première courbe quadratique
+      cp1x: -1.8,
+      cp1z: 12,
+      
+      // Courbe cubique
+      cp2x: -2.8,
+      cp2z: 0,
+      cp3x: -2.0,
+      cp3z: -6,
+      
+      // Deuxième courbe quadratique
+      cp4x: -0.3,
+      cp4z: -13
+    };
   }
   
   /**
@@ -62,20 +78,17 @@ class GestionnaireTrajectoire {
     const P0 = this.positionDepart.clone();
     
     // Points de contrôle de la première courbe quadratique
-    const P1 = new THREE.Vector3(-1.8, 0, 12); // Point de contrôle 1
+    const P1 = new THREE.Vector3(this.pointsControle.cp1x, 0, this.pointsControle.cp1z);
     const P2 = new THREE.Vector3(-2.5, 0, 4);  // Point d'arrivée courbe 1 / début courbe 2
     
     // Points de contrôle de la courbe cubique
-    const P3 = new THREE.Vector3(-2.8, 0, 0);   // Point de contrôle 2
-    const P4 = new THREE.Vector3(-2.0, 0, -6);  // Point de contrôle 3
+    const P3 = new THREE.Vector3(this.pointsControle.cp2x, 0, this.pointsControle.cp2z);
+    const P4 = new THREE.Vector3(this.pointsControle.cp3x, 0, this.pointsControle.cp3z);
     const P5 = new THREE.Vector3(-1.0, 0, -10); // Point d'arrivée courbe 2 / début courbe 3
     
     // Points de contrôle de la deuxième courbe quadratique
-    const P6 = new THREE.Vector3(-0.3, 0, -13); // Point de contrôle 4
+    const P6 = new THREE.Vector3(this.pointsControle.cp4x, 0, this.pointsControle.cp4z);
     const P7 = this.positionArrivee.clone();    // Point d'arrivée final
-    
-    // Sauvegarder les points de contrôle pour modification ultérieure
-    this.pointsControle = [P1, P3, P4, P6];
     
     // ========================================
     // COURBE 1: BÉZIER QUADRATIQUE
@@ -98,20 +111,6 @@ class GestionnaireTrajectoire {
     const points3 = courbe3.getPoints(20);
     
     // ========================================
-    // VÉRIFICATION DE LA CONTINUITÉ G1
-    // ========================================
-    // La continuité G1 signifie que les tangentes aux points de jonction
-    // sont colinéaires (même direction mais pas nécessairement même longueur)
-    
-    // Tangente à la fin de courbe1
-    const tangente1Fin = courbe1.getTangent(1);
-    // Tangente au début de courbe2
-    const tangente2Debut = courbe2.getTangent(0);
-    
-    // Ces tangentes doivent avoir la même direction pour G1
-    // (vérification faite implicitement par la construction)
-    
-    // ========================================
     // COMBINAISON DES COURBES
     // ========================================
     const tousLesPoints = [
@@ -121,22 +120,6 @@ class GestionnaireTrajectoire {
     ];
     
     return tousLesPoints;
-  }
-  
-  /**
-   * Modifie un point de contrôle de la trajectoire courbe
-   * @param {number} index - Index du point de contrôle (0-3)
-   * @param {THREE.Vector3} nouvellePosition - Nouvelle position
-   */
-  modifierPointControle(index, nouvellePosition) {
-    if (index >= 0 && index < this.pointsControle.length) {
-      this.pointsControle[index].copy(nouvellePosition);
-      
-      // Recréer la trajectoire avec le nouveau point
-      if (this.typeTrajectoire === 'courbe') {
-        this.afficherTrajectoire('courbe');
-      }
-    }
   }
   
   /**
@@ -162,9 +145,9 @@ class GestionnaireTrajectoire {
     const geometrie = new THREE.BufferGeometry().setFromPoints(points);
     const materiel = new THREE.LineBasicMaterial({
       color: couleur,
-      linewidth: 2,
+      linewidth: 3,
       transparent: true,
-      opacity: 0.8
+      opacity: 0.9
     });
     
     this.ligneTrajectoire = new THREE.Line(geometrie, materiel);
@@ -185,19 +168,48 @@ class GestionnaireTrajectoire {
     // Supprimer les anciennes sphères
     this.supprimerPointsControle();
     
-    const geometrieSphere = new THREE.SphereGeometry(0.15, 16, 16);
+    const geometrieSphere = new THREE.SphereGeometry(0.2, 16, 16);
     const materielSphere = new THREE.MeshBasicMaterial({
       color: 0xffff00,
       transparent: true,
-      opacity: 0.6
+      opacity: 0.7
     });
     
-    for (const point of this.pointsControle) {
+    // Créer les sphères pour chaque point de contrôle
+    const pointsAffichage = [
+      { x: this.pointsControle.cp1x, z: this.pointsControle.cp1z },
+      { x: this.pointsControle.cp2x, z: this.pointsControle.cp2z },
+      { x: this.pointsControle.cp3x, z: this.pointsControle.cp3z },
+      { x: this.pointsControle.cp4x, z: this.pointsControle.cp4z }
+    ];
+    
+    for (const point of pointsAffichage) {
       const sphere = new THREE.Mesh(geometrieSphere, materielSphere);
-      sphere.position.copy(point);
-      sphere.position.y = 0.2;
+      sphere.position.set(point.x, 0.3, point.z);
       this.scene.add(sphere);
       this.spheresControle.push(sphere);
+    }
+  }
+  
+  /**
+   * Met à jour la position des sphères de contrôle
+   */
+  mettreAJourSpheresControle() {
+    if (this.spheresControle.length > 0) {
+      const positions = [
+        { x: this.pointsControle.cp1x, z: this.pointsControle.cp1z },
+        { x: this.pointsControle.cp2x, z: this.pointsControle.cp2z },
+        { x: this.pointsControle.cp3x, z: this.pointsControle.cp3z },
+        { x: this.pointsControle.cp4x, z: this.pointsControle.cp4z }
+      ];
+      
+      for (let i = 0; i < this.spheresControle.length && i < positions.length; i++) {
+        this.spheresControle[i].position.set(
+          positions[i].x,
+          0.3,
+          positions[i].z
+        );
+      }
     }
   }
   
@@ -250,5 +262,13 @@ class GestionnaireTrajectoire {
    */
   obtenirType() {
     return this.typeTrajectoire;
+  }
+  
+  /**
+   * Obtient les points de contrôle (pour le GUI)
+   * @returns {Object}
+   */
+  obtenirPointsControle() {
+    return this.pointsControle;
   }
 }
