@@ -2,8 +2,8 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="fr">
 <head>
   <meta charset="utf-8">
-  <meta name="author" content="Damine Wassil, Zenedine El Karafi">
-  <meta name="copyright" content="Damine Wassil, Zenedine El Karaf">
+  <meta name="author" content="Votre Nom">
+  <meta name="copyright" content="Votre Nom">
   <title>Projet Info3Ba - Curling 2025-2026</title>
   
   <!-- Librairies Three.js -->
@@ -14,6 +14,7 @@
   
   <!-- Scripts du projet -->
   <script type="text/javascript" src="../js/Pierre.js"></script>
+  <script type="text/javascript" src="../js/Balai.js"></script>
   <script type="text/javascript" src="../js/Piste.js"></script>
   <script type="text/javascript" src="../js/Trajectoire.js"></script>
   <script type="text/javascript" src="../js/GestionnaireCollisions.js"></script>
@@ -27,52 +28,97 @@
 </head>
 
 <body>
+  <!-- En-tête -->
+  <div id="entete">
+    <h1>🥌 Curling - Info3Ba 2025-2026</h1>
+    <div id="info-partie">
+      <div class="info-item">
+        <span class="label">Manche:</span>
+        <span id="numero-manche" class="valeur">1</span>
+      </div>
+      <div class="info-item">
+        <span class="label">Équipe:</span>
+        <span id="nom-equipe" class="valeur equipe-rouge">Rouge</span>
+      </div>
+      <div class="info-item">
+        <span class="label">Lancers restants:</span>
+        <span id="nombre-lancers" class="valeur">10</span>
+      </div>
+    </div>
+  </div>
+  
   <!-- Conteneur principal pour le canvas WebGL -->
   <div id="conteneur-webgl"></div>
   
-  <!-- Tableau des scores -->
-  <div id="tableau-scores">
-    <h3>Tableau des Scores</h3>
-    <p id="manche-actuelle">Manche: <span id="numero-manche">1</span></p>
-    <p id="equipe-actuelle">Équipe: <span id="nom-equipe" class="equipe-rouge">Rouge</span></p>
-    <p id="lancers-restants">Lancers restants: <span id="nombre-lancers">10</span></p>
+  <!-- Panneau latéral gauche -->
+  <div id="panneau-gauche">
+    <!-- Tableau des scores -->
+    <div class="carte">
+      <h3>📊 Tableau des Scores</h3>
+      <div class="table-conteneur">
+        <table id="table-scores">
+          <thead>
+            <tr>
+              <th>Manche</th>
+              <th class="equipe-rouge">Rouge</th>
+              <th class="equipe-bleue">Bleu</th>
+            </tr>
+          </thead>
+          <tbody id="corps-table-scores">
+            <!-- Les scores seront ajoutés dynamiquement ici -->
+          </tbody>
+          <tfoot>
+            <tr class="total-row">
+              <th>Total</th>
+              <th id="total-rouge" class="equipe-rouge">0</th>
+              <th id="total-bleu" class="equipe-bleue">0</th>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+      
+      <!-- Affichage du meneur -->
+      <div id="meneur-display">
+        <div id="meneur-texte">En attente...</div>
+      </div>
+    </div>
     
-    <table id="table-scores">
-      <thead>
-        <tr>
-          <th>Manche</th>
-          <th class="equipe-rouge">Rouge</th>
-          <th class="equipe-bleue">Bleu</th>
-          <th>Meneur</th>
-        </tr>
-      </thead>
-      <tbody id="corps-table-scores">
-        <!-- Les scores seront ajoutés dynamiquement ici -->
-      </tbody>
-      <tfoot>
-        <tr>
-          <th>Total</th>
-          <th id="total-rouge" class="equipe-rouge">0</th>
-          <th id="total-bleu" class="equipe-bleue">0</th>
-          <th id="meneur-total"></th>
-        </tr>
-      </tfoot>
-    </table>
+    <!-- Contrôles -->
+    <div class="carte">
+      <h3>🎮 Contrôles</h3>
+      <div class="controles-grid">
+        <div class="controle-item">
+          <span class="touche">Espace</span>
+          <span class="description">Lancer la pierre</span>
+        </div>
+        <div class="controle-item">
+          <span class="touche">Clic</span>
+          <span class="description">Changer trajectoire</span>
+        </div>
+        <div class="controle-item">
+          <span class="touche">L</span>
+          <span class="description">Trajectoire rectiligne</span>
+        </div>
+        <div class="controle-item">
+          <span class="touche">C</span>
+          <span class="description">Trajectoire courbe</span>
+        </div>
+        <div class="controle-item">
+          <span class="touche">R</span>
+          <span class="description">Réinitialiser</span>
+        </div>
+        <div class="controle-item">
+          <span class="touche">1-4</span>
+          <span class="description">Changer caméra</span>
+        </div>
+      </div>
+    </div>
   </div>
   
-  <!-- Informations et contrôles -->
-  <div id="info-controles">
-    <h4>Contrôles</h4>
-    <ul>
-      <li><strong>Espace</strong>: Lancer la pierre</li>
-      <li><strong>Clic</strong>: Changer trajectoire</li>
-      <li><strong>L</strong>: Trajectoire rectiligne</li>
-      <li><strong>C</strong>: Trajectoire courbe</li>
-      <li><strong>R</strong>: Réinitialiser</li>
-    </ul>
-  </div>
-  
-  <!-- Statistiques de performance (FPS) -->
+  <!-- Stats FPS -->
   <div id="stats-container"></div>
+  
+  <!-- Messages de notification -->
+  <div id="notification"></div>
 </body>
 </html>
