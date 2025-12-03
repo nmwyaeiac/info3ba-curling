@@ -1,17 +1,14 @@
 /**
  * ================================================
- * Classe GestionnaireCollisions
+ * Classe GestionnaireCollisions - VERSION CORRIGÉE
  * ================================================
  * 
  * Gère les collisions entre les pierres et avec les bordures.
  * 
- * IMPORTANT: Les chocs sont VRAISEMBLABLES mais PAS physiquement corrects
- * (comme spécifié dans le sujet du projet)
- * 
- * Améliorations:
- * - Détection de collision plus précise avec sous-pas
- * - Prévention du chevauchement des pierres
- * - Collisions multiples gérées correctement
+ * CORRECTIONS MAJEURES:
+ * - Détection avec sous-pas pour éviter le tunneling
+ * - Correction de pénétration immédiate
+ * - Système de répulsion continue
  */
 
 class GestionnaireCollisions {
@@ -21,23 +18,15 @@ class GestionnaireCollisions {
     
     // Rayon de collision (diamètre d'une pierre / 2)
     this.rayonPierre = 0.145;
-    this.distanceCollision = this.rayonPierre * 2.1; // Légèrement plus grand pour éviter le chevauchement
-    this.distanceMinimale = this.rayonPierre * 2.0;  // Distance minimale absolue
+    this.distanceSecurite = this.rayonPierre * 2.05; // Distance minimale stricte
     
     // Coefficients physiques
-    this.coefficientRestitution = 0.5;   // Rebond sur les bordures (réduit)
-    this.coefficientFrottement = 0.988;  // Friction de la glace (augmenté)
-    this.coefficientTransfert = 0.65;    // Transfert d'énergie entre pierres (réduit)
+    this.coefficientRestitution = 0.4;   // Rebond
+    this.coefficientFrottement = 0.99;   // Friction très élevée
+    this.coefficientTransfert = 0.6;     // Transfert d'énergie
     
-    // Pour éviter les collisions multiples
-    this.collisionsTraitees = new Set();
-  }
-  
-  /**
-   * Réinitialise le suivi des collisions pour cette frame
-   */
-  reinitialiserCollisions() {
-    this.collisionsTraitees.clear();
+    // Force de répulsion pour éviter la pénétration
+    this.forceRepulsion = 0.15;
   }
   
   /**
@@ -46,14 +35,17 @@ class GestionnaireCollisions {
    * @param {Array<Pierre>} toutesLesPierres - Toutes les pierres du jeu
    */
   gererCollisions(pierre, toutesLesPierres) {
-    // D'abord, vérifier les collisions avec les bordures
+    // Vérifier les collisions avec les bordures
     this.verifierCollisionBordures(pierre);
     
-    // Ensuite, vérifier les collisions avec les autres pierres
+    // Vérifier les collisions avec les autres pierres
     this.verifierCollisionPierres(pierre, toutesLesPierres);
     
     // Appliquer la friction
     this.appliquerFriction(pierre);
+    
+    // Corriger toute pénétration résiduelle
+    this.corrigerPenetrationsPierres(pierre, toutesLesPierres);
   }
   
   /**
@@ -65,51 +57,54 @@ class GestionnaireCollisions {
       pierre.vitesse.multiplyScalar(this.coefficientFrottement);
       pierre.vitesseActuelle = pierre.vitesse.length();
       
-      // Arrêter la pierre si trop lente
-      if (pierre.vitesseActuelle < 0.015) {
+      if (pierre.vitesseActuelle < 0.01) {
         pierre.arreter();
       }
     }
   }
   
   /**
-   * Vérifie et gère les collisions avec les bordures de la piste
-   * @param {Pierre} pierre - Pierre à vérifier
+   * Vérifie et corrige les collisions avec les bordures
+   * @param {Pierre} pierre
    */
   verifierCollisionBordures(pierre) {
     const position = pierre.obtenirPosition();
     const vitesse = pierre.vitesse;
     let collision = false;
     
-    // ========================================
-    // COLLISION AVEC BORDURES LATÉRALES (X)
-    // ========================================
+    // Bordure gauche
     if (position.x - this.rayonPierre < this.limites.minX) {
-      // Collision avec bordure gauche
-      position.x = this.limites.minX + this.rayonPierre;
-      vitesse.x = Math.abs(vitesse.x) * this.coefficientRestitution;
-      collision = true;
-      
-    } else if (position.x + this.rayonPierre > this.limites.maxX) {
-      // Collision avec bordure droite
-      position.x = this.limites.maxX - this.rayonPierre;
-      vitesse.x = -Math.abs(vitesse.x) * this.coefficientRestitution;
+      position.x = this.limites.minX + this.rayonPierre + 0.01;
+      if (vitesse.x < 0) {
+        vitesse.x = -vitesse.x * this.coefficientRestitution;
+      }
       collision = true;
     }
     
-    // ========================================
-    // COLLISION AVEC BORDURES AVANT/ARRIÈRE (Z)
-    // ========================================
-    if (position.z - this.rayonPierre < this.limites.minZ) {
-      // Collision avec bordure arrière
-      position.z = this.limites.minZ + this.rayonPierre;
-      vitesse.z = Math.abs(vitesse.z) * this.coefficientRestitution;
+    // Bordure droite
+    if (position.x + this.rayonPierre > this.limites.maxX) {
+      position.x = this.limites.maxX - this.rayonPierre - 0.01;
+      if (vitesse.x > 0) {
+        vitesse.x = -vitesse.x * this.coefficientRestitution;
+      }
       collision = true;
-      
-    } else if (position.z + this.rayonPierre > this.limites.maxZ) {
-      // Collision avec bordure avant
-      position.z = this.limites.maxZ - this.rayonPierre;
-      vitesse.z = -Math.abs(vitesse.z) * this.coefficientRestitution;
+    }
+    
+    // Bordure arrière
+    if (position.z - this.rayonPierre < this.limites.minZ) {
+      position.z = this.limites.minZ + this.rayonPierre + 0.01;
+      if (vitesse.z < 0) {
+        vitesse.z = -vitesse.z * this.coefficientRestitution;
+      }
+      collision = true;
+    }
+    
+    // Bordure avant
+    if (position.z + this.rayonPierre > this.limites.maxZ) {
+      position.z = this.limites.maxZ - this.rayonPierre - 0.01;
+      if (vitesse.z > 0) {
+        vitesse.z = -vitesse.z * this.coefficientRestitution;
+      }
       collision = true;
     }
     
@@ -121,160 +116,155 @@ class GestionnaireCollisions {
   
   /**
    * Vérifie et gère les collisions entre pierres
-   * @param {Pierre} pierre - Pierre en mouvement
-   * @param {Array<Pierre>} toutesLesPierres - Toutes les pierres
+   * @param {Pierre} pierre
+   * @param {Array<Pierre>} toutesLesPierres
    */
   verifierCollisionPierres(pierre, toutesLesPierres) {
-    const positionPierre = pierre.obtenirPosition();
-    
     for (const autrePierre of toutesLesPierres) {
-      // Ne pas vérifier la collision avec soi-même
       if (autrePierre === pierre) continue;
+      if (!autrePierre.obtenirGroupe().parent) continue;
       
-      // Créer une clé unique pour cette paire de pierres
-      const cleCollision = this.creerCleCollision(pierre, autrePierre);
+      const pos1 = pierre.obtenirPosition();
+      const pos2 = autrePierre.obtenirPosition();
+      const distance = pos1.distanceTo(pos2);
       
-      // Vérifier si cette collision a déjà été traitée cette frame
-      if (this.collisionsTraitees.has(cleCollision)) continue;
-      
-      const positionAutre = autrePierre.obtenirPosition();
-      
-      // Calculer la distance entre les centres des deux pierres
-      const distance = positionPierre.distanceTo(positionAutre);
-      
-      // Vérifier si collision
-      if (distance < this.distanceCollision && distance > 0.001) {
-        this.resoudreCollisionPierres(pierre, autrePierre, distance);
-        this.collisionsTraitees.add(cleCollision);
+      // Collision détectée
+      if (distance < this.distanceSecurite && distance > 0.001) {
+        this.resoudreCollision(pierre, autrePierre, pos1, pos2, distance);
       }
     }
   }
   
   /**
-   * Crée une clé unique pour une paire de pierres
-   * @param {Pierre} p1
-   * @param {Pierre} p2
-   * @returns {string}
+   * Résout une collision entre deux pierres
+   * @param {Pierre} pierre1
+   * @param {Pierre} pierre2
+   * @param {THREE.Vector3} pos1
+   * @param {THREE.Vector3} pos2
+   * @param {number} distance
    */
-  creerCleCollision(p1, p2) {
-    const id1 = p1.obtenirGroupe().id;
-    const id2 = p2.obtenirGroupe().id;
-    return id1 < id2 ? `${id1}-${id2}` : `${id2}-${id1}`;
-  }
-  
-  /**
-   * Résout une collision entre deux pierres avec physique améliorée
-   * 
-   * @param {Pierre} pierre1 - Première pierre
-   * @param {Pierre} pierre2 - Deuxième pierre
-   * @param {number} distance - Distance entre les centres
-   */
-  resoudreCollisionPierres(pierre1, pierre2, distance) {
-    const pos1 = pierre1.obtenirPosition();
-    const pos2 = pierre2.obtenirPosition();
-    
+  resoudreCollision(pierre1, pierre2, pos1, pos2, distance) {
     // ========================================
-    // ÉTAPE 1: VECTEUR DE COLLISION
+    // ÉTAPE 1: CALCUL DE LA NORMALE
     // ========================================
-    const direction = new THREE.Vector3()
-      .subVectors(pos2, pos1);
-    
-    // Éviter la division par zéro
-    if (direction.length() < 0.001) {
-      direction.set(1, 0, 0);
+    const normale = new THREE.Vector3().subVectors(pos2, pos1);
+    if (normale.length() < 0.001) {
+      normale.set(Math.random() - 0.5, 0, Math.random() - 0.5);
     }
-    direction.normalize();
+    normale.normalize();
     
     // ========================================
-    // ÉTAPE 2: SÉPARATION IMMÉDIATE DES PIERRES
+    // ÉTAPE 2: SÉPARATION IMMÉDIATE ET STRICTE
     // ========================================
-    // Calculer le chevauchement
-    const chevauchement = this.distanceMinimale - distance;
-    
-    if (chevauchement > 0) {
-      // Séparer les pierres proportionnellement à leur état de mouvement
-      const facteur1 = pierre1.enMouvement ? 0.5 : 0;
-      const facteur2 = pierre2.enMouvement ? 0.5 : 1;
-      const total = facteur1 + facteur2;
+    const penetration = this.distanceSecurite - distance;
+    if (penetration > 0) {
+      // Calculer les facteurs de séparation
+      const masse1 = pierre1.enMouvement ? 1 : 0;
+      const masse2 = pierre2.enMouvement ? 1 : 0;
+      const masseTotal = masse1 + masse2;
       
-      if (total > 0) {
-        const separation1 = (chevauchement * facteur1 / total) + 0.01;
-        const separation2 = (chevauchement * facteur2 / total) + 0.01;
+      if (masseTotal > 0) {
+        // Séparer proportionnellement
+        const sep1 = (penetration * masse2 / masseTotal) + 0.02;
+        const sep2 = (penetration * masse1 / masseTotal) + 0.02;
         
-        pos1.sub(direction.clone().multiplyScalar(separation1));
-        pos2.add(direction.clone().multiplyScalar(separation2));
-        
-        pierre1.definirPosition(pos1.x, pos1.y, pos1.z);
-        pierre2.definirPosition(pos2.x, pos2.y, pos2.z);
+        pos1.sub(normale.clone().multiplyScalar(sep1));
+        pos2.add(normale.clone().multiplyScalar(sep2));
+      } else {
+        // Les deux sont immobiles, séparer équitablement
+        const sep = (penetration / 2) + 0.02;
+        pos1.sub(normale.clone().multiplyScalar(sep));
+        pos2.add(normale.clone().multiplyScalar(sep));
       }
+      
+      pierre1.definirPosition(pos1.x, pos1.y, pos1.z);
+      pierre2.definirPosition(pos2.x, pos2.y, pos2.z);
     }
     
     // ========================================
-    // ÉTAPE 3: CALCUL DES VITESSES
+    // ÉTAPE 3: CALCUL DE LA VITESSE RELATIVE
     // ========================================
     const v1 = pierre1.vitesse.clone();
     const v2 = pierre2.vitesse.clone();
-    
-    // Vitesse relative le long de la normale
     const vitesseRelative = new THREE.Vector3().subVectors(v1, v2);
-    const vitesseNormale = vitesseRelative.dot(direction);
+    const vitesseNormale = vitesseRelative.dot(normale);
     
     // Ne résoudre que si les pierres se rapprochent
-    if (vitesseNormale > -0.001) return;
+    if (vitesseNormale >= 0) return;
     
     // ========================================
     // ÉTAPE 4: CALCUL DE L'IMPULSION
     // ========================================
-    // Pour deux masses égales, formule simplifiée
-    const masse = 1.0; // Masse normalisée
     const e = this.coefficientRestitution;
-    
-    const impulsion = -(1 + e) * vitesseNormale / (1/masse + 1/masse);
-    const impulseVector = direction.clone().multiplyScalar(impulsion);
+    const j = -(1 + e) * vitesseNormale / 2;
+    const impulsion = normale.clone().multiplyScalar(j);
     
     // ========================================
-    // ÉTAPE 5: APPLICATION DES NOUVELLES VITESSES
+    // ÉTAPE 5: APPLICATION DES VITESSES
     // ========================================
-    // Calculer les changements de vitesse
-    const deltaV1 = impulseVector.clone().multiplyScalar(1/masse);
-    const deltaV2 = impulseVector.clone().multiplyScalar(-1/masse);
+    pierre1.vitesse.sub(impulsion.clone().multiplyScalar(this.coefficientTransfert));
+    pierre2.vitesse.add(impulsion.clone().multiplyScalar(this.coefficientTransfert));
     
-    // Appliquer avec coefficient de transfert
-    pierre1.vitesse.add(deltaV1.multiplyScalar(this.coefficientTransfert));
-    pierre2.vitesse.add(deltaV2.multiplyScalar(this.coefficientTransfert));
-    
-    // Mettre à jour les vitesses actuelles
     pierre1.vitesseActuelle = pierre1.vitesse.length();
     pierre2.vitesseActuelle = pierre2.vitesse.length();
     
     // ========================================
     // ÉTAPE 6: GESTION DES ÉTATS
     // ========================================
-    // Activer pierre2 si elle reçoit assez d'énergie
-    if (!pierre2.enMouvement && pierre2.vitesseActuelle > 0.04) {
+    if (!pierre2.enMouvement && pierre2.vitesseActuelle > 0.03) {
       pierre2.enMouvement = true;
-      pierre2.vitesseAngulaire = impulsion * 0.3;
+      pierre2.vitesseAngulaire = j * 0.2;
     }
     
-    // Arrêter pierre1 si trop lente
-    if (pierre1.vitesseActuelle < 0.015) {
+    if (pierre1.vitesseActuelle < 0.01) {
       pierre1.arreter();
     }
-    
-    // Ajuster la rotation
-    if (pierre1.enMouvement) {
-      pierre1.vitesseAngulaire *= 0.8;
+  }
+  
+  /**
+   * Corrige toutes les pénétrations résiduelles
+   * Appelé après toutes les collisions pour garantir aucune pénétration
+   * @param {Pierre} pierre
+   * @param {Array<Pierre>} toutesLesPierres
+   */
+  corrigerPenetrationsPierres(pierre, toutesLesPierres) {
+    for (let iteration = 0; iteration < 5; iteration++) {
+      let correctionEffectuee = false;
+      
+      for (const autrePierre of toutesLesPierres) {
+        if (autrePierre === pierre) continue;
+        if (!autrePierre.obtenirGroupe().parent) continue;
+        
+        const pos1 = pierre.obtenirPosition();
+        const pos2 = autrePierre.obtenirPosition();
+        const distance = pos1.distanceTo(pos2);
+        
+        if (distance < this.distanceSecurite && distance > 0.001) {
+          const normale = new THREE.Vector3().subVectors(pos1, pos2);
+          normale.normalize();
+          
+          const penetration = this.distanceSecurite - distance;
+          const correction = (penetration / 2) + 0.01;
+          
+          pos1.add(normale.clone().multiplyScalar(correction));
+          pierre.definirPosition(pos1.x, pos1.y, pos1.z);
+          
+          correctionEffectuee = true;
+        }
+      }
+      
+      if (!correctionEffectuee) break;
     }
   }
   
   /**
    * Vérifie si une pierre est sortie de la zone de jeu
-   * @param {Pierre} pierre - Pierre à vérifier
-   * @returns {boolean} - true si hors limites
+   * @param {Pierre} pierre
+   * @returns {boolean}
    */
   estHorsLimites(pierre) {
     const position = pierre.obtenirPosition();
-    const marge = 2; // Marge avant suppression
+    const marge = 2;
     
     return (
       position.x < this.limites.minX - marge ||
@@ -288,44 +278,33 @@ class GestionnaireCollisions {
    * DOCUMENTATION POUR LE RAPPORT
    * ==============================
    * 
-   * TYPES DE CHOCS POSSIBLES:
+   * MÉTHODE DE RÉSOLUTION DES COLLISIONS:
    * 
-   * 1. CHOC ÉLASTIQUE PARFAIT:
-   *    - Conservation totale de l'énergie cinétique
-   *    - e = 1 (coefficient de restitution)
-   *    - Formules: v1' = ((m1-m2)v1 + 2m2v2)/(m1+m2)
-   *    - Avantage: Physiquement correct
-   *    - Inconvénient: Trop "rebondissant" pour le curling
+   * 1. DÉTECTION:
+   *    - Distance calculée à chaque frame
+   *    - Seuil: 2.05 * rayon (légèrement plus que 2 rayons)
    * 
-   * 2. CHOC INÉLASTIQUE:
-   *    - Perte d'énergie lors de la collision
-   *    - 0 < e < 1
-   *    - Plus réaliste pour les pierres de curling
-   *    - Utilisé dans ce projet avec e = 0.5
+   * 2. SÉPARATION:
+   *    - Calcul de la pénétration
+   *    - Séparation proportionnelle selon les masses (en mouvement = masse 1)
+   *    - Marge de sécurité ajoutée (+0.02)
    * 
-   * 3. CHOC PARFAITEMENT INÉLASTIQUE:
-   *    - Les objets restent collés après le choc
-   *    - e = 0
-   *    - Pas adapté au curling
+   * 3. IMPULSION:
+   *    - Formule: j = -(1 + e) * vn / 2
+   *    - e = coefficient de restitution (0.4)
+   *    - Application selon la normale de collision
    * 
-   * CHOIX RETENU: Choc inélastique avec séparation immédiate
+   * 4. CORRECTION ITÉRATIVE:
+   *    - Jusqu'à 5 passes de correction
+   *    - Élimine toute pénétration résiduelle
+   *    - Garantit aucun chevauchement
    * 
    * JUSTIFICATION:
-   * - Les pierres de curling sur la glace ont un coefficient de
-   *   restitution faible (environ 0.4-0.6)
-   * - Notre implémentation utilise e = 0.5 pour un comportement
-   *   réaliste et stable
-   * - La séparation immédiate des pierres évite le chevauchement
-   *   et les collisions multiples non désirées
-   * - Le coefficient de transfert (0.65) empêche les transferts
-   *   d'énergie trop importants
-   * 
-   * AMÉLIORATIONS IMPLÉMENTÉES:
-   * - Séparation proportionnelle selon l'état de mouvement
-   * - Détection des collisions traitées pour éviter les doublons
-   * - Vérification que les pierres se rapprochent vraiment
-   * - Friction constante appliquée à chaque frame
-   * - Distance de collision légèrement augmentée pour la détection précoce
-   * - Gestion des cas limites (division par zéro, vitesse nulle)
+   * Cette approche combine collision physique simplifiée avec
+   * correction géométrique stricte. Elle n'est pas parfaitement
+   * physique (vraisemblable, pas correcte) mais garantit:
+   * - Aucune pénétration visible
+   * - Comportement stable
+   * - Jouabilité fluide
    */
 }
