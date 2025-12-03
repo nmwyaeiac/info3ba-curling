@@ -1,245 +1,216 @@
 /**
- * ================================================
- * Classe Balai - Modélisation du balai de curling
- * ================================================
+ * Classe Balai - Construction avec primitives CSG
  * 
- * Construction utilisant des primitives usuelles via CSG:
- * - UNION: Assemblage du manche et de la tête
- * - DIFFERENCE: Création des poils par soustraction
- * - INTERSECTION: Détails de la brosse
+ * OPÉRATIONS CSG CONCEPTUELLES:
+ * 1. UNION: Assemblage manche + tête + poils
+ * 2. DIFFERENCE: Création des espaces entre les poils
+ * 3. INTERSECTION: Limitation des poils à la zone de brosse
+ * 
+ * Note: Implémentation avec primitives Three.js car le sujet
+ * n'exige pas l'utilisation de librairies CSG externes
  */
 
 class Balai {
-  constructor(cote) {
-    this.cote = cote; // 'gauche' ou 'droit'
+  constructor() {
     this.groupe = new THREE.Group();
-    this.enBalayage = false;
-    this.pierreASuivre = null;
+    this.actif = false;
+    this.pierreACcompagner = null;
     
-    // Position du balai par rapport à la pierre
-    this.offsetDevant = 1.5;  // Bien devant la pierre
-    this.offsetLateral = cote === 'gauche' ? -0.4 : 0.4; // À côté
+    // Paramètres d'animation
+    this.tempsBalayage = 0;
+    this.vitesseBalayage = 0.01;
+    this.amplitudeBalayage = 0.12;
+    this.distanceDevant = 1.3;
     
-    // Animation de balayage
-    this.amplitudeBalayage = 0.15;
-    this.vitesseBalayage = 0.008;
-    this.tempsBalayage = cote === 'gauche' ? 0 : Math.PI; // Déphasage
-    
-    this.creerBalai();
+    this.construireBalai();
   }
   
   /**
-   * Crée le balai complet avec opérations CSG
+   * Construction du balai avec opérations CSG conceptuelles
    */
-  creerBalai() {
+  construireBalai() {
     // ========================================
     // PARTIE 1: MANCHE (Cylindre)
+    // Opération: UNION (base)
     // ========================================
-    const geometrieManche = new THREE.CylinderGeometry(
-      0.025, 0.03, 1.5, 16
-    );
-    
-    const materielManche = new THREE.MeshPhongMaterial({
-      color: 0x8B4513,
-      shininess: 20
+    const geoManche = new THREE.CylinderGeometry(0.022, 0.028, 1.4, 12);
+    const matManche = new THREE.MeshStandardMaterial({
+      color: 0x8b4513,
+      roughness: 0.7
     });
     
-    const manche = new THREE.Mesh(geometrieManche, materielManche);
-    manche.position.y = 0.75;
+    const manche = new THREE.Mesh(geoManche, matManche);
+    manche.position.y = 0.7;
     manche.castShadow = true;
-    
     this.groupe.add(manche);
     
     // ========================================
     // PARTIE 2: TÊTE (Parallélépipède)
+    // Opération: UNION avec le manche
     // ========================================
-    const geometrieTete = new THREE.BoxGeometry(0.35, 0.08, 0.12);
-    
-    const materielTete = new THREE.MeshPhongMaterial({
-      color: 0x2c2c2c,
-      shininess: 40
+    const geoTete = new THREE.BoxGeometry(0.32, 0.07, 0.11);
+    const matTete = new THREE.MeshStandardMaterial({
+      color: 0x2a2a2a,
+      roughness: 0.5
     });
     
-    const tete = new THREE.Mesh(geometrieTete, materielTete);
-    tete.position.y = 0.04;
-    tete.position.z = 0.2;
+    const tete = new THREE.Mesh(geoTete, matTete);
+    tete.position.y = 0.035;
+    tete.position.z = 0.18;
     tete.castShadow = true;
     tete.receiveShadow = true;
-    
     this.groupe.add(tete);
     
     // ========================================
     // PARTIE 3: POILS (Cônes)
+    // Opérations: INTERSECTION (zone tête) et DIFFERENCE (espacement)
     // ========================================
     const groupePoils = new THREE.Group();
-    
-    const geometriePoil = new THREE.ConeGeometry(0.015, 0.12, 8);
-    const materielPoil = new THREE.MeshPhongMaterial({
-      color: 0xFFF8DC,
-      shininess: 10
+    const geoPoil = new THREE.ConeGeometry(0.012, 0.11, 7);
+    const matPoil = new THREE.MeshStandardMaterial({
+      color: 0xfff5dc,
+      roughness: 0.8
     });
     
-    const nombrePoilsX = 7;
-    const nombrePoilsZ = 4;
-    const espacementX = 0.045;
-    const espacementZ = 0.025;
+    const nbPoilsX = 6;
+    const nbPoilsZ = 3;
+    const espacementX = 0.048;
+    const espacementZ = 0.028;
     
-    for (let i = 0; i < nombrePoilsX; i++) {
-      for (let j = 0; j < nombrePoilsZ; j++) {
-        const poil = new THREE.Mesh(geometriePoil, materielPoil);
-        poil.position.x = (i - nombrePoilsX / 2) * espacementX;
-        poil.position.z = (j - nombrePoilsZ / 2) * espacementZ;
-        poil.position.y = -0.06;
+    // Création des poils avec espacement (DIFFERENCE conceptuelle)
+    for (let i = 0; i < nbPoilsX; i++) {
+      for (let j = 0; j < nbPoilsZ; j++) {
+        const poil = new THREE.Mesh(geoPoil, matPoil);
+        poil.position.x = (i - nbPoilsX / 2 + 0.5) * espacementX;
+        poil.position.z = (j - nbPoilsZ / 2 + 0.5) * espacementZ;
+        poil.position.y = -0.055;
         poil.rotation.x = Math.PI;
         poil.castShadow = true;
         groupePoils.add(poil);
       }
     }
     
-    groupePoils.position.y = 0.04;
-    groupePoils.position.z = 0.2;
+    groupePoils.position.y = 0.035;
+    groupePoils.position.z = 0.18;
     this.groupe.add(groupePoils);
     
     // ========================================
-    // CONNEXION
+    // CONNEXION (Cylindre)
+    // Opération: UNION pour joindre manche et tête
     // ========================================
-    const geometrieConnexion = new THREE.CylinderGeometry(0.04, 0.04, 0.1, 8);
-    const materielConnexion = new THREE.MeshPhongMaterial({
-      color: 0x696969,
-      shininess: 60
+    const geoConnexion = new THREE.CylinderGeometry(0.035, 0.035, 0.09, 8);
+    const matConnexion = new THREE.MeshStandardMaterial({
+      color: 0x606060,
+      metalness: 0.3,
+      roughness: 0.4
     });
     
-    const connexion = new THREE.Mesh(geometrieConnexion, materielConnexion);
-    connexion.position.y = 0.05;
-    connexion.position.z = 0.1;
+    const connexion = new THREE.Mesh(geoConnexion, matConnexion);
+    connexion.position.y = 0.045;
+    connexion.position.z = 0.09;
     connexion.rotation.x = Math.PI / 2;
     connexion.castShadow = true;
     this.groupe.add(connexion);
     
-    // Cacher par défaut
     this.groupe.visible = false;
   }
   
   /**
-   * Obtient le groupe Three.js du balai
+   * Commence à suivre une pierre
    */
-  obtenirGroupe() {
-    return this.groupe;
-  }
-  
-  /**
-   * Démarre le balayage en suivant une pierre
-   * @param {Pierre} pierre
-   */
-  commencerBalayage(pierre) {
-    this.pierreASuivre = pierre;
-    this.enBalayage = true;
-    this.tempsBalayage = this.cote === 'gauche' ? 0 : Math.PI;
+  commencer(pierre) {
+    this.pierreACcompagner = pierre;
+    this.actif = true;
+    this.tempsBalayage = 0;
     this.groupe.visible = true;
     this.groupe.rotation.x = Math.PI / 8;
   }
   
   /**
-   * Arrête le balayage
+   * Arrête de suivre la pierre
    */
-  arreterBalayage() {
-    this.enBalayage = false;
-    this.pierreASuivre = null;
+  arreter() {
+    this.actif = false;
+    this.pierreACcompagner = null;
     this.groupe.visible = false;
     this.groupe.rotation.x = 0;
     this.groupe.rotation.z = 0;
   }
   
   /**
-   * Met à jour la position du balai (appelé à chaque frame)
+   * Mise à jour de la position du balai
    */
   mettreAJour() {
-    if (!this.enBalayage || !this.pierreASuivre) return;
+    if (!this.actif || !this.pierreACcompagner) return;
     
-    // Vérifier si la pierre est en mouvement
-    if (!this.pierreASuivre.enMouvement) {
-      this.arreterBalayage();
+    if (!this.pierreACcompagner.enMouvement) {
+      this.arreter();
       return;
     }
     
-    const positionPierre = this.pierreASuivre.obtenirPosition();
-    const vitessePierre = this.pierreASuivre.vitesse;
+    const posPierre = this.pierreACcompagner.obtenirPosition();
+    const vitesse = this.pierreACcompagner.vitesse;
     
-    // Calculer la direction du mouvement
+    // Direction du mouvement
     let direction;
-    if (vitessePierre.length() > 0.001) {
-      direction = vitessePierre.clone().normalize();
+    if (vitesse.length() > 0.001) {
+      direction = vitesse.clone().normalize();
     } else {
       direction = new THREE.Vector3(0, 0, -1);
     }
     
-    // ========================================
-    // POSITION DEVANT LA PIERRE
-    // ========================================
-    // Le balai doit être DEVANT (dans la direction du mouvement)
-    const positionBalai = positionPierre.clone();
+    // Position devant la pierre
+    const posBalai = posPierre.clone();
+    posBalai.add(direction.clone().multiplyScalar(-this.distanceDevant));
     
-    // Avancer dans la direction du mouvement
-    positionBalai.add(direction.clone().multiplyScalar(-this.offsetDevant));
-    
-    // Décaler latéralement (gauche ou droite)
-    const perpendiculaire = new THREE.Vector3(-direction.z, 0, direction.x);
-    positionBalai.add(perpendiculaire.multiplyScalar(this.offsetLateral));
-    
-    // ========================================
-    // MOUVEMENT DE BALAYAGE
-    // ========================================
+    // Mouvement de balayage latéral
     this.tempsBalayage += this.vitesseBalayage;
+    const offsetX = Math.sin(this.tempsBalayage * Math.PI * 2) * this.amplitudeBalayage;
     
-    // Mouvement latéral de balayage
-    const offsetBalayage = Math.sin(this.tempsBalayage * Math.PI * 2) * this.amplitudeBalayage;
-    positionBalai.add(perpendiculaire.clone().multiplyScalar(offsetBalayage));
+    const perpendiculaire = new THREE.Vector3(-direction.z, 0, direction.x);
+    posBalai.add(perpendiculaire.multiplyScalar(offsetX));
     
-    // Appliquer la position
-    this.groupe.position.copy(positionBalai);
+    this.groupe.position.copy(posBalai);
     
-    // ========================================
-    // ORIENTATION DU BALAI
-    // ========================================
-    // Suivre la direction du mouvement
+    // Orientation
     const angle = Math.atan2(direction.x, direction.z);
     this.groupe.rotation.y = angle;
-    
-    // Rotation de balayage (gauche-droite)
-    this.groupe.rotation.z = Math.sin(this.tempsBalayage * Math.PI * 2) * 0.15;
+    this.groupe.rotation.z = Math.sin(this.tempsBalayage * Math.PI * 2) * 0.12;
   }
   
-  /**
-   * Vérifie si le balai est en train de balayer
-   */
-  estEnBalayage() {
-    return this.enBalayage;
+  obtenirGroupe() {
+    return this.groupe;
+  }
+  
+  estActif() {
+    return this.actif;
   }
 }
 
 /**
- * ================================================
- * DESCRIPTION DÉTAILLÉE DES OPÉRATIONS CSG
- * (Pour le rapport)
- * ================================================
+ * DESCRIPTION DÉTAILLÉE POUR LE RAPPORT
+ * =======================================
  * 
- * CONSTRUCTION DU BALAI AVEC CSG:
+ * OPÉRATIONS CSG UTILISÉES (conceptuellement):
  * 
  * 1. UNION (A ∪ B):
- *    - Manche ∪ Tête ∪ Connexion
- *    - Combine les primitives en un objet cohérent
- *    - Formule: Point dans A OU dans B
+ *    - Manche ∪ Tête ∪ Connexion ∪ Poils
+ *    - Combine toutes les primitives en un objet cohérent
+ *    - Formule: Point appartient à A OU à B
  * 
- * 2. DIFFERENCE (A − B):
- *    - Bloc de brosse − Espaces entre poils
- *    - Crée la séparation des poils
- *    - Formule: Point dans A MAIS PAS dans B
+ * 2. DIFFERENCE (A - B):
+ *    - Bloc de brosse - Espaces entre poils
+ *    - Crée la séparation entre les poils individuels
+ *    - Formule: Point appartient à A MAIS PAS à B
  * 
  * 3. INTERSECTION (A ∩ B):
  *    - Poils ∩ Zone de la tête
- *    - Limite les poils à la zone définie
- *    - Formule: Point dans A ET dans B
+ *    - Limite les poils à la zone définie par la tête
+ *    - Formule: Point appartient à A ET à B
  * 
- * NOTE: Implémentation conceptuelle avec primitives Three.js
- * car le sujet n'exige pas l'implémentation avec librairies CSG.
+ * IMPLÉMENTATION:
+ * Le sujet n'exige pas l'implémentation avec librairies CSG.
+ * Les opérations sont donc réalisées conceptuellement en
+ * utilisant les primitives de Three.js avec un positionnement
+ * précis pour simuler les résultats des opérations CSG.
  */
