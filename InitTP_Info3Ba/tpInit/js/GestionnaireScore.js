@@ -1,103 +1,69 @@
 /**
- * ================================================
- * Classe GestionnaireScore
- * ================================================
+ * Classe Score - Gestion des scores
  * 
- * Gère le calcul et l'affichage des scores selon les règles du curling.
- * 
- * Règles du curling pour le score:
+ * Règles du curling:
  * - Seule l'équipe avec la pierre la plus proche du centre marque
- * - Cette équipe marque 1 point par pierre plus proche que la meilleure
- *   pierre adverse
+ * - Elle marque 1 point par pierre plus proche que la meilleure adverse
  * - Les pierres doivent être dans la maison pour compter
  */
 
-class GestionnaireScore {
+class Score {
   constructor(piste) {
-    this.piste = piste;
     this.centreMaison = piste.obtenirCentreMaison();
     this.rayonMaison = piste.obtenirRayonMaison();
     
-    // Historique des scores par manche
     this.scoresRouge = [];
     this.scoresBleu = [];
-    
-    // Numéro de la manche actuelle
     this.mancheActuelle = 1;
   }
   
   /**
-   * Calcule le score pour la manche actuelle
-   * @param {Array<Pierre>} pierres - Toutes les pierres sur la piste
-   * @returns {Object} - {rouge: score, bleu: score, gagnant: 'rouge'|'bleu'|null}
+   * Calcule le score d'une manche
    */
-  calculerScore(pierres) {
-    // ========================================
-    // ÉTAPE 1: FILTRER LES PIERRES DANS LA MAISON
-    // ========================================
-    const pierresDansLaMaison = this.filtrerPierresDansLaMaison(pierres);
+  calculer(pierres) {
+    // Filtrer les pierres dans la maison
+    const pierresDansLaMaison = this.filtrerDansLaMaison(pierres);
     
     if (pierresDansLaMaison.length === 0) {
-      // Aucune pierre dans la maison = pas de score
       return { rouge: 0, bleu: 0, gagnant: null };
     }
     
-    // ========================================
-    // ÉTAPE 2: TRIER PAR DISTANCE AU CENTRE
-    // ========================================
+    // Trier par distance au centre
     pierresDansLaMaison.sort((a, b) => a.distance - b.distance);
     
-    // ========================================
-    // ÉTAPE 3: DÉTERMINER L'ÉQUIPE GAGNANTE
-    // ========================================
+    // Déterminer l'équipe gagnante
     const equipePlusProche = pierresDansLaMaison[0].equipe;
     
-    // ========================================
-    // ÉTAPE 4: COMPTER LES POINTS
-    // ========================================
-    // Compter combien de pierres de l'équipe gagnante sont plus proches
-    // que la meilleure pierre adverse
+    // Compter les points
     let score = 0;
-    
-    for (const pierreDonnees of pierresDansLaMaison) {
-      if (pierreDonnees.equipe === equipePlusProche) {
+    for (const p of pierresDansLaMaison) {
+      if (p.equipe === equipePlusProche) {
         score++;
       } else {
-        // Dès qu'on rencontre une pierre adverse, on arrête
         break;
       }
     }
     
-    // ========================================
-    // ÉTAPE 5: RETOURNER LE RÉSULTAT
-    // ========================================
-    const resultat = {
+    return {
       rouge: equipePlusProche === 'rouge' ? score : 0,
       bleu: equipePlusProche === 'bleu' ? score : 0,
       gagnant: equipePlusProche
     };
-    
-    return resultat;
   }
   
   /**
-   * Filtre les pierres qui sont dans la maison et calcule leur distance
-   * @param {Array<Pierre>} pierres - Toutes les pierres
-   * @returns {Array} - [{pierre, equipe, distance}, ...]
+   * Filtre les pierres dans la maison
    */
-  filtrerPierresDansLaMaison(pierres) {
-    const pierresDansLaMaison = [];
+  filtrerDansLaMaison(pierres) {
+    const result = [];
     
     for (const pierre of pierres) {
-      if (!pierre || !pierre.obtenirGroupe().parent) {
-        // Pierre n'existe pas ou a été retirée de la scène
-        continue;
-      }
+      if (!pierre || !pierre.obtenirGroupe().parent) continue;
       
       const distance = pierre.distanceAuCentre(this.centreMaison);
       
       if (distance <= this.rayonMaison) {
-        pierresDansLaMaison.push({
+        result.push({
           pierre: pierre,
           equipe: pierre.equipe,
           distance: distance
@@ -105,71 +71,48 @@ class GestionnaireScore {
       }
     }
     
-    return pierresDansLaMaison;
+    return result;
   }
   
   /**
-   * Enregistre le score d'une manche
-   * @param {number} scoreRouge - Score de l'équipe rouge
-   * @param {number} scoreBleu - Score de l'équipe bleue
+   * Enregistre le score
    */
-  enregistrerScore(scoreRouge, scoreBleu) {
+  enregistrer(scoreRouge, scoreBleu) {
     this.scoresRouge.push(scoreRouge);
     this.scoresBleu.push(scoreBleu);
   }
   
   /**
-   * Met à jour l'affichage HTML du tableau des scores
-   * @param {number} scoreRouge - Score de la manche actuelle
-   * @param {number} scoreBleu - Score de la manche actuelle
-   * @param {string} gagnant - 'rouge', 'bleu' ou null
+   * Met à jour l'affichage HTML
    */
   mettreAJourAffichage(scoreRouge, scoreBleu, gagnant) {
-    const tbody = document.getElementById('corps-table-scores');
+    const tbody = document.getElementById('scores-body');
     
-    // Créer une nouvelle ligne
     const ligne = tbody.insertRow();
-    ligne.className = 'nouvelle-ligne-score'; // Pour animation CSS
+    ligne.className = 'nouvelle-ligne';
     
-    // Colonne manche
-    const celluleManche = ligne.insertCell(0);
-    celluleManche.textContent = this.mancheActuelle;
+    // Manche
+    const cellManche = ligne.insertCell(0);
+    cellManche.textContent = this.mancheActuelle;
     
-    // Colonne score rouge
-    const celluleRouge = ligne.insertCell(1);
-    celluleRouge.textContent = scoreRouge;
-    if (gagnant === 'rouge') {
-      celluleRouge.className = 'equipe-rouge meneur-manche';
-    }
+    // Score rouge
+    const cellRouge = ligne.insertCell(1);
+    cellRouge.textContent = scoreRouge;
+    cellRouge.className = 'rouge';
+    if (gagnant === 'rouge') cellRouge.classList.add('gagnant');
     
-    // Colonne score bleu
-    const celluleBleu = ligne.insertCell(2);
-    celluleBleu.textContent = scoreBleu;
-    if (gagnant === 'bleu') {
-      celluleBleu.className = 'equipe-bleue meneur-manche';
-    }
+    // Score bleu
+    const cellBleu = ligne.insertCell(2);
+    cellBleu.textContent = scoreBleu;
+    cellBleu.className = 'bleu';
+    if (gagnant === 'bleu') cellBleu.classList.add('gagnant');
     
-    // Colonne meneur
-    const celluleMeneur = ligne.insertCell(3);
-    if (gagnant === 'rouge') {
-      celluleMeneur.textContent = 'Rouge';
-      celluleMeneur.className = 'equipe-rouge';
-    } else if (gagnant === 'bleu') {
-      celluleMeneur.textContent = 'Bleu';
-      celluleMeneur.className = 'equipe-bleue';
-    } else {
-      celluleMeneur.textContent = '-';
-    }
-    
-    // Mettre à jour les totaux
     this.mettreAJourTotaux();
-    
-    // Incrémenter le numéro de manche
     this.mancheActuelle++;
   }
   
   /**
-   * Met à jour les totaux dans le pied de tableau
+   * Met à jour les totaux
    */
   mettreAJourTotaux() {
     const totalRouge = this.scoresRouge.reduce((a, b) => a + b, 0);
@@ -177,24 +120,10 @@ class GestionnaireScore {
     
     document.getElementById('total-rouge').textContent = totalRouge;
     document.getElementById('total-bleu').textContent = totalBleu;
-    
-    const celluleMeneurTotal = document.getElementById('meneur-total');
-    if (totalRouge > totalBleu) {
-      celluleMeneurTotal.textContent = 'Rouge';
-      celluleMeneurTotal.className = 'equipe-rouge';
-    } else if (totalBleu > totalRouge) {
-      celluleMeneurTotal.textContent = 'Bleu';
-      celluleMeneurTotal.className = 'equipe-bleue';
-    } else {
-      celluleMeneurTotal.textContent = 'Égalité';
-      celluleMeneurTotal.className = '';
-    }
   }
   
   /**
-   * Obtient le score total d'une équipe
-   * @param {string} equipe - 'rouge' ou 'bleu'
-   * @returns {number}
+   * Obtient le total d'une équipe
    */
   obtenirTotal(equipe) {
     if (equipe === 'rouge') {
@@ -205,8 +134,7 @@ class GestionnaireScore {
   }
   
   /**
-   * Obtient l'équipe en tête
-   * @returns {string} - 'rouge', 'bleu' ou 'egalite'
+   * Obtient le meneur
    */
   obtenirMeneur() {
     const totalRouge = this.obtenirTotal('rouge');
@@ -218,27 +146,22 @@ class GestionnaireScore {
   }
   
   /**
-   * Réinitialise tous les scores
+   * Réinitialise les scores
    */
   reinitialiser() {
     this.scoresRouge = [];
     this.scoresBleu = [];
     this.mancheActuelle = 1;
     
-    // Vider le tableau HTML
-    const tbody = document.getElementById('corps-table-scores');
-    tbody.innerHTML = '';
-    
-    // Réinitialiser les totaux
+    document.getElementById('scores-body').innerHTML = '';
     document.getElementById('total-rouge').textContent = '0';
     document.getElementById('total-bleu').textContent = '0';
-    document.getElementById('meneur-total').textContent = '';
   }
   
   /**
-   * Met à jour le numéro de manche affiché
+   * Met à jour le numéro de manche
    */
-  mettreAJourNumeroManche() {
-    document.getElementById('numero-manche').textContent = this.mancheActuelle;
+  mettreAJourNumero() {
+    document.getElementById('manche-numero').textContent = this.mancheActuelle;
   }
 }
