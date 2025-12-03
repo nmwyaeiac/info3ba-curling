@@ -24,6 +24,7 @@ class JeuCurling {
     this.gestionnaireTrajectoire = null;
     this.gestionnaireCollisions = null;
     this.gestionnaireScore = null;
+    this.balai = null;
     
     // Pierres
     this.pierres = [];
@@ -39,7 +40,8 @@ class JeuCurling {
     this.parametres = {
       trajectoire: 'rectiligne',
       vitesse: 0.35,
-      camera: 'vue-ensemble'
+      camera: 'vue-ensemble',
+      afficherBalai: true
     };
     
     // Stats FPS
@@ -56,6 +58,7 @@ class JeuCurling {
     this.creerRenderer();
     this.initialiserGestionnaires();
     this.creerPiste();
+    this.creerBalai();
     this.configurerEvenements();
     this.creerInterface();
     this.afficherTrajectoire();
@@ -82,7 +85,7 @@ class JeuCurling {
       alpha: false
     });
     
-    this.renderer.setSize(window.innerWidth, window.innerHeight);
+    this.renderer.setSize(window.innerWidth - 320, window.innerHeight - 80);
     this.renderer.setPixelRatio(window.devicePixelRatio);
     
     // Configuration des ombres
@@ -124,12 +127,21 @@ class JeuCurling {
   }
   
   /**
+   * Crée le balai de curling
+   */
+  creerBalai() {
+    this.balai = new Balai();
+    this.scene.add(this.balai.obtenirGroupe());
+  }
+  
+  /**
    * Configure les événements (clavier, souris, fenêtre)
    */
   configurerEvenements() {
     // Redimensionnement de la fenêtre
     window.addEventListener('resize', () => {
       this.gestionnaireCameras.gererRedimensionnement();
+      this.renderer.setSize(window.innerWidth - 320, window.innerHeight - 80);
     });
     
     // Événements clavier
@@ -155,33 +167,54 @@ class JeuCurling {
       case 'KeyL':
         this.parametres.trajectoire = 'rectiligne';
         this.afficherTrajectoire();
+        this.afficherNotification('Trajectoire rectiligne');
         break;
         
       case 'KeyC':
         this.parametres.trajectoire = 'courbe';
         this.afficherTrajectoire();
+        this.afficherNotification('Trajectoire courbe');
         break;
         
       case 'KeyR':
         this.reinitialiserJeu();
+        this.afficherNotification('Jeu réinitialisé');
         break;
         
       case 'Digit1':
         this.gestionnaireCameras.activerCamera('vue-ensemble');
+        this.afficherNotification('Vue d\'ensemble');
         break;
         
       case 'Digit2':
         this.gestionnaireCameras.activerCamera('vue-piste');
+        this.afficherNotification('Vue piste');
         break;
         
       case 'Digit3':
         this.gestionnaireCameras.activerCamera('vue-laterale');
+        this.afficherNotification('Vue latérale');
         break;
         
       case 'Digit4':
         this.gestionnaireCameras.activerCamera('vue-maison');
+        this.afficherNotification('Vue maison');
         break;
     }
+  }
+  
+  /**
+   * Affiche une notification temporaire
+   * @param {string} message
+   */
+  afficherNotification(message) {
+    const notification = document.getElementById('notification');
+    notification.textContent = message;
+    notification.classList.add('visible');
+    
+    setTimeout(() => {
+      notification.classList.remove('visible');
+    }, 2000);
   }
   
   /**
@@ -194,13 +227,16 @@ class JeuCurling {
       this.parametres.trajectoire === 'rectiligne' ? 'courbe' : 'rectiligne';
     
     this.afficherTrajectoire();
+    this.afficherNotification(
+      `Trajectoire ${this.parametres.trajectoire}`
+    );
   }
   
   /**
    * Affiche la trajectoire actuelle
    */
   afficherTrajectoire() {
-    const couleur = this.equipeActuelle === 'rouge' ? 0xff0000 : 0x0000ff;
+    const couleur = this.equipeActuelle === 'rouge' ? 0xff6b6b : 0x4ecdc4;
     this.gestionnaireTrajectoire.afficherTrajectoire(
       this.parametres.trajectoire,
       couleur
@@ -212,7 +248,10 @@ class JeuCurling {
    */
   lancerPierre() {
     // Ne pas lancer si une pierre est déjà en mouvement
-    if (this.pierresEnMouvement.length > 0) return;
+    if (this.pierresEnMouvement.length > 0) {
+      this.afficherNotification('⚠️ Attendez que la pierre s\'arrête');
+      return;
+    }
     
     // Créer la pierre
     const pierre = new Pierre(this.equipeActuelle);
@@ -231,10 +270,19 @@ class JeuCurling {
     
     this.pierresEnMouvement.push(pierre);
     
+    // Animation du balai si activé
+    if (this.parametres.afficherBalai && this.balai) {
+      setTimeout(() => {
+        this.balai.balayer(pierre.obtenirPosition(), 3000);
+      }, 500);
+    }
+    
     // Cacher la trajectoire pendant le lancer
     setTimeout(() => {
       this.gestionnaireTrajectoire.supprimerTrajectoire();
     }, 300);
+    
+    this.afficherNotification('🥌 Pierre lancée !');
   }
   
   /**
@@ -290,21 +338,43 @@ class JeuCurling {
       resultat.gagnant
     );
     
+    // Mettre à jour le meneur
+    this.mettreAJourMeneur();
+    
     // Afficher un message
     if (resultat.gagnant) {
-      const message = resultat.gagnant === 'rouge' ? 
-        `Équipe Rouge marque ${resultat.rouge} point(s) !` :
-        `Équipe Bleue marque ${resultat.bleu} point(s) !`;
-      
-      console.log(message);
+      const nomEquipe = resultat.gagnant === 'rouge' ? 'Rouge' : 'Bleue';
+      const score = resultat[resultat.gagnant];
+      this.afficherNotification(
+        `🎯 Équipe ${nomEquipe}: ${score} point${score > 1 ? 's' : ''} !`
+      );
     } else {
-      console.log('Aucune pierre dans la maison - Pas de score');
+      this.afficherNotification('Aucun point marqué cette manche');
     }
     
     // Préparer la manche suivante
     setTimeout(() => {
       this.preparerNouvelleManche();
-    }, 2000);
+    }, 3000);
+  }
+  
+  /**
+   * Met à jour l'affichage du meneur
+   */
+  mettreAJourMeneur() {
+    const meneur = this.gestionnaireScore.obtenirMeneur();
+    const totalRouge = this.gestionnaireScore.obtenirTotal('rouge');
+    const totalBleu = this.gestionnaireScore.obtenirTotal('bleu');
+    
+    const meneurTexte = document.getElementById('meneur-texte');
+    
+    if (meneur === 'rouge') {
+      meneurTexte.innerHTML = `🏆 <span class="equipe-rouge">Équipe Rouge</span> mène ${totalRouge}-${totalBleu}`;
+    } else if (meneur === 'bleu') {
+      meneurTexte.innerHTML = `🏆 <span class="equipe-bleue">Équipe Bleue</span> mène ${totalBleu}-${totalRouge}`;
+    } else {
+      meneurTexte.innerHTML = `⚖️ Égalité ${totalRouge}-${totalBleu}`;
+    }
   }
   
   /**
@@ -320,12 +390,11 @@ class JeuCurling {
     this.pierresEnMouvement = [];
     this.nombreLancers = 0;
     
-    // L'équipe qui n'a pas marqué commence
-    // (règle simplifiée - normalement c'est plus complexe)
-    
     this.mettreAJourInterface();
     this.gestionnaireScore.mettreAJourNumeroManche();
     this.afficherTrajectoire();
+    
+    this.afficherNotification('Nouvelle manche !');
   }
   
   /**
@@ -357,9 +426,9 @@ class JeuCurling {
   mettreAJourInterface() {
     // Équipe actuelle
     const elementEquipe = document.getElementById('nom-equipe');
-    const nomEquipe = this.equipeActuelle === 'rouge' ? 'Rouge' : 'Bleu';
+    const nomEquipe = this.equipeActuelle === 'rouge' ? 'Rouge' : 'Bleue';
     elementEquipe.textContent = nomEquipe;
-    elementEquipe.className = `equipe-${this.equipeActuelle}`;
+    elementEquipe.className = `valeur equipe-${this.equipeActuelle}`;
     
     // Lancers restants
     const lancersRestants = this.lancersParManche - this.nombreLancers;
@@ -384,12 +453,15 @@ class JeuCurling {
     this.gestionnaireScore.reinitialiser();
     this.gestionnaireScore.mettreAJourNumeroManche();
     
+    // Réinitialiser le meneur
+    document.getElementById('meneur-texte').textContent = 'En attente...';
+    
     this.mettreAJourInterface();
     this.afficherTrajectoire();
   }
   
   /**
-   * Crée l'interface dat.GUI
+   * Crée l'interface dat.GUI avec contrôles de Bézier
    */
   creerInterface() {
     // Vérifier si dat.GUI est disponible
@@ -398,10 +470,12 @@ class JeuCurling {
       return;
     }
     
-    this.gui = new dat.GUI();
+    this.gui = new dat.GUI({ width: 350 });
     
-    // Dossier Jeu
-    const dossierJeu = this.gui.addFolder('Contrôles du Jeu');
+    // ========================================
+    // DOSSIER JEU
+    // ========================================
+    const dossierJeu = this.gui.addFolder('🎮 Contrôles du Jeu');
     
     dossierJeu.add(this.parametres, 'trajectoire', ['rectiligne', 'courbe'])
       .name('Type de trajectoire')
@@ -410,13 +484,60 @@ class JeuCurling {
     dossierJeu.add(this.parametres, 'vitesse', 0.1, 0.8, 0.05)
       .name('Vitesse de lancer');
     
-    dossierJeu.add(this, 'lancerPierre').name('Lancer (Espace)');
-    dossierJeu.add(this, 'reinitialiserJeu').name('Recommencer (R)');
+    dossierJeu.add(this.parametres, 'afficherBalai')
+      .name('Afficher le balai');
+    
+    dossierJeu.add(this, 'lancerPierre').name('🥌 Lancer (Espace)');
+    dossierJeu.add(this, 'reinitialiserJeu').name('🔄 Recommencer (R)');
     
     dossierJeu.open();
     
-    // Dossier Caméras
-    const dossierCamera = this.gui.addFolder('Caméras');
+    // ========================================
+    // DOSSIER COURBES DE BÉZIER
+    // ========================================
+    const dossierBezier = this.gui.addFolder('📐 Points de Contrôle Bézier');
+    const pts = this.gestionnaireTrajectoire.obtenirPointsControle();
+    
+    // Point de contrôle 1 (Première courbe quadratique)
+    const dossierCP1 = dossierBezier.addFolder('Point Contrôle 1 (Quad)');
+    dossierCP1.add(pts, 'cp1x', -5, 5, 0.1)
+      .name('X')
+      .onChange(() => this.mettreAJourTrajectoire());
+    dossierCP1.add(pts, 'cp1z', -25, 25, 0.5)
+      .name('Z')
+      .onChange(() => this.mettreAJourTrajectoire());
+    
+    // Point de contrôle 2 (Courbe cubique)
+    const dossierCP2 = dossierBezier.addFolder('Point Contrôle 2 (Cubique)');
+    dossierCP2.add(pts, 'cp2x', -5, 5, 0.1)
+      .name('X')
+      .onChange(() => this.mettreAJourTrajectoire());
+    dossierCP2.add(pts, 'cp2z', -25, 25, 0.5)
+      .name('Z')
+      .onChange(() => this.mettreAJourTrajectoire());
+    
+    // Point de contrôle 3 (Courbe cubique)
+    const dossierCP3 = dossierBezier.addFolder('Point Contrôle 3 (Cubique)');
+    dossierCP3.add(pts, 'cp3x', -5, 5, 0.1)
+      .name('X')
+      .onChange(() => this.mettreAJourTrajectoire());
+    dossierCP3.add(pts, 'cp3z', -25, 25, 0.5)
+      .name('Z')
+      .onChange(() => this.mettreAJourTrajectoire());
+    
+    // Point de contrôle 4 (Deuxième courbe quadratique)
+    const dossierCP4 = dossierBezier.addFolder('Point Contrôle 4 (Quad)');
+    dossierCP4.add(pts, 'cp4x', -5, 5, 0.1)
+      .name('X')
+      .onChange(() => this.mettreAJourTrajectoire());
+    dossierCP4.add(pts, 'cp4z', -25, 25, 0.5)
+      .name('Z')
+      .onChange(() => this.mettreAJourTrajectoire());
+    
+    // ========================================
+    // DOSSIER CAMÉRAS
+    // ========================================
+    const dossierCamera = this.gui.addFolder('📷 Caméras');
     
     const cameras = {
       'Vue Ensemble': 'vue-ensemble',
@@ -436,8 +557,18 @@ class JeuCurling {
     // Créer les stats FPS si disponible
     if (typeof Stats !== 'undefined') {
       this.stats = new Stats();
-      this.stats.showPanel(0); // 0: fps, 1: ms, 2: mb
+      this.stats.showPanel(0);
       document.getElementById('stats-container').appendChild(this.stats.dom);
+    }
+  }
+  
+  /**
+   * Met à jour la trajectoire quand les points de contrôle changent
+   */
+  mettreAJourTrajectoire() {
+    if (this.parametres.trajectoire === 'courbe') {
+      this.gestionnaireTrajectoire.mettreAJourSpheresControle();
+      this.afficherTrajectoire();
     }
   }
   
@@ -481,7 +612,7 @@ window.addEventListener('DOMContentLoaded', () => {
   const jeu = new JeuCurling();
   
   console.log('===========================================');
-  console.log('Projet Curling - Info3Ba 2025-2026');
+  console.log('🥌 Projet Curling - Info3Ba 2025-2026');
   console.log('===========================================');
   console.log('Contrôles:');
   console.log('  - Espace: Lancer la pierre');
@@ -490,5 +621,7 @@ window.addEventListener('DOMContentLoaded', () => {
   console.log('  - C: Trajectoire courbe');
   console.log('  - R: Réinitialiser le jeu');
   console.log('  - 1/2/3/4: Changer de caméra');
+  console.log('===========================================');
+  console.log('📐 Modifiez les courbes de Bézier dans le menu GUI !');
   console.log('===========================================');
 });
