@@ -59,14 +59,4 @@ function creerGUI() {
         .onChange(() => updateTrajRectiFromParams());
     
     pArriveeDossier.open();
-    
-    // Dossier pour trajectoire Bézier
-    trajectoireBezierDossier = gui.addFolder('Trajectoire Bézier');
-    
-    trajectoireBezierDossier.add(menuGUI.trajectoireParams, 'longueur', 30, 50, 0.5)
-        .name('Longueur')
-        .onChange(() => updateTrajBezierFromParams());
-    
-    trajectoireBezierDossier.__ul.style.display = 'none';
-    trajectoireBezierDossier.close();
 }
