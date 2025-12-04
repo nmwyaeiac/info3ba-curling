@@ -1,5 +1,11 @@
 // Création de la trajectoire
 function creerTrajectoire() {
+    // Empêcher le changement de trajectoire pendant l'animation
+    if (isAnimation) {
+        console.log("Impossible de changer la trajectoire pendant l'animation");
+        return;
+    }
+    
     if (menuGUI.trajectoryType === 'straight') {
         creerTrajectoireRectiliigne();
     } else if (menuGUI.trajectoryType === 'curved') {
@@ -32,6 +38,9 @@ function creerTrajectoireRectiliigne() {
 
 // Mise à jour de la trajectoire rectiligne
 function updateTrajRecti() {
+    // Empêcher la modification pendant l'animation
+    if (isAnimation) return;
+    
     let startPoint = new THREE.Vector3(0, 0.11, 20);
     let endPoint = guideParrivee.position.clone();
     
@@ -172,6 +181,8 @@ function GuiPointsDeControls(points) {
 
 // Mise à jour de la trajectoire depuis les points de contrôle
 function updateTrajectoryFromControlPoints() {
+    // Empêcher la modification pendant l'animation
+    if (isAnimation) return;
     if (PcontrolMeshTab.length < 3) return;
     
     let p1 = PcontrolMeshTab[0].position.clone();
