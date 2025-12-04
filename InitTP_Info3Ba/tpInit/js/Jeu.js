@@ -27,17 +27,12 @@ class Jeu {
     this.params = {
       typeTrajectoire: 'rectiligne',
       vitesse: 0.18,
-      afficherBalai: true
+      afficherBalais: true
     };
-    
-    this.scoreCalcule = false;
     
     this.initialiser();
   }
   
-  /**
-   * Initialise le jeu
-   */
   initialiser() {
     this.creerScene();
     this.creerCamera();
@@ -45,25 +40,19 @@ class Jeu {
     this.creerControles();
     this.creerLumieres();
     this.creerPiste();
-    this.creerBalai();
+    this.creerBalais();
     this.creerGUI();
     this.configurerEvenements();
     this.afficherTrajectoire();
     this.demarrer();
   }
   
-  /**
-   * Crée la scène
-   */
   creerScene() {
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x8fd3f4);
     this.scene.fog = new THREE.Fog(0x8fd3f4, 45, 90);
   }
   
-  /**
-   * Crée la caméra
-   */
   creerCamera() {
     this.camera = new THREE.PerspectiveCamera(
       60,
@@ -75,9 +64,6 @@ class Jeu {
     this.camera.lookAt(0, 0, 0);
   }
   
-  /**
-   * Crée le renderer
-   */
   creerRenderer() {
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
     this.renderer.setSize(window.innerWidth - 300, window.innerHeight - 70);
@@ -88,9 +74,6 @@ class Jeu {
     document.getElementById('conteneur-webgl').appendChild(this.renderer.domElement);
   }
   
-  /**
-   * Crée les contrôles
-   */
   creerControles() {
     this.controles = new THREE.OrbitControls(this.camera, this.renderer.domElement);
     this.controles.enableDamping = true;
@@ -98,9 +81,6 @@ class Jeu {
     this.controles.maxPolarAngle = Math.PI / 2 - 0.1;
   }
   
-  /**
-   * Crée les lumières
-   */
   creerLumieres() {
     const ambiante = new THREE.AmbientLight(0xffffff, 0.5);
     this.scene.add(ambiante);
@@ -121,9 +101,6 @@ class Jeu {
     this.scene.add(ponctuelle);
   }
   
-  /**
-   * Crée la piste
-   */
   creerPiste() {
     this.piste = new Piste(this.scene);
     this.trajectoire = new Trajectoire(this.scene);
@@ -132,19 +109,13 @@ class Jeu {
     this.score.mettreAJourNumero();
   }
   
-  /**
-   * Crée le balai
-   */
-  creerBalai() {
+  creerBalais() {
     this.balaiGauche = new Balai('gauche');
     this.balaiDroit = new Balai('droite');
     this.scene.add(this.balaiGauche.obtenirGroupe());
     this.scene.add(this.balaiDroit.obtenirGroupe());
   }
   
-  /**
-   * Crée le GUI
-   */
   creerGUI() {
     if (typeof dat === 'undefined') return;
     
@@ -158,8 +129,8 @@ class Jeu {
     dossierJeu.add(this.params, 'vitesse', 0.1, 0.25, 0.01)
       .name('Vitesse');
     
-    dossierJeu.add(this.params, 'afficherBalai')
-      .name('Afficher balai');
+    dossierJeu.add(this.params, 'afficherBalais')
+      .name('Afficher balais');
     
     dossierJeu.add(this, 'lancerPierre').name('🥌 Lancer (ESPACE)');
     dossierJeu.add(this, 'reinitialiser').name('🔄 Réinitialiser (R)');
@@ -193,26 +164,17 @@ class Jeu {
     dossierCamera.open();
   }
   
-  /**
-   * Configure les événements
-   */
   configurerEvenements() {
     window.addEventListener('resize', () => this.gererRedimensionnement());
     window.addEventListener('keydown', (e) => this.gererClavier(e));
   }
   
-  /**
-   * Gère le redimensionnement
-   */
   gererRedimensionnement() {
     this.camera.aspect = (window.innerWidth - 300) / (window.innerHeight - 70);
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(window.innerWidth - 300, window.innerHeight - 70);
   }
   
-  /**
-   * Gère le clavier
-   */
   gererClavier(event) {
     switch(event.code) {
       case 'Space':
@@ -250,17 +212,11 @@ class Jeu {
     }
   }
   
-  /**
-   * Change la vue de la caméra
-   */
   changerVue(x, y, z) {
     this.camera.position.set(x, y, z);
     this.camera.lookAt(0, 0, 0);
   }
   
-  /**
-   * Affiche une notification
-   */
   afficherNotification(message) {
     const notif = document.getElementById('notification');
     notif.textContent = message;
@@ -271,17 +227,11 @@ class Jeu {
     }, 2000);
   }
   
-  /**
-   * Affiche la trajectoire
-   */
   afficherTrajectoire() {
     const couleur = this.equipeActuelle === 'rouge' ? 0xff6b6b : 0x4ecdc4;
     this.trajectoire.afficher(this.params.typeTrajectoire, couleur);
   }
   
-  /**
-   * Met à jour la trajectoire
-   */
   majTrajectoire() {
     if (this.params.typeTrajectoire === 'courbe') {
       this.trajectoire.mettreAJourSpheres();
@@ -289,9 +239,6 @@ class Jeu {
     }
   }
   
-  /**
-   * Lance une pierre
-   */
   lancerPierre() {
     if (this.pierresEnMouvement.length > 0) {
       this.afficherNotification('⚠️ Attendez la fin du lancer');
@@ -299,7 +246,7 @@ class Jeu {
     }
     
     const pierre = new Pierre(this.equipeActuelle);
-    pierre.definirPosition(0, pierre.rayon, 21);
+    pierre.definirPosition(0, pierre.rayon, 20.5);
     
     this.scene.add(pierre.obtenirGroupe());
     this.pierres.push(pierre);
@@ -311,7 +258,7 @@ class Jeu {
     
     this.pierresEnMouvement.push(pierre);
     
-    if (this.params.afficherBalai) {
+    if (this.params.afficherBalais) {
       this.balaiGauche.commencer(pierre);
       this.balaiDroit.commencer(pierre);
     }
@@ -320,13 +267,9 @@ class Jeu {
       this.trajectoire.supprimer();
     }, 250);
     
-    this.scoreCalcule = false;
     this.afficherNotification('🥌 Pierre lancée !');
   }
   
-  /**
-   * Gère l'arrêt d'une pierre
-   */
   pierreArretee(pierre) {
     const index = this.pierresEnMouvement.indexOf(pierre);
     if (index > -1) {
@@ -345,9 +288,6 @@ class Jeu {
     }
   }
   
-  /**
-   * Passe au tour suivant
-   */
   tourSuivant() {
     this.nombreLancers++;
     
@@ -360,9 +300,6 @@ class Jeu {
     }
   }
   
-  /**
-   * Termine une manche
-   */
   terminerManche() {
     const resultat = this.score.calculer(this.pierres);
     this.score.enregistrer(resultat.rouge, resultat.bleu);
@@ -381,9 +318,6 @@ class Jeu {
     setTimeout(() => this.preparerNouvelleManche(), 2800);
   }
   
-  /**
-   * Met à jour l'affichage du meneur
-   */
   mettreAJourMeneur() {
     const meneur = this.score.obtenirMeneur();
     const totalRouge = this.score.obtenirTotal('rouge');
@@ -400,9 +334,6 @@ class Jeu {
     }
   }
   
-  /**
-   * Prépare une nouvelle manche
-   */
   preparerNouvelleManche() {
     for (const pierre of this.pierres) {
       this.scene.remove(pierre.obtenirGroupe());
@@ -417,9 +348,6 @@ class Jeu {
     this.afficherTrajectoire();
   }
   
-  /**
-   * Met à jour les pierres en mouvement
-   */
   mettreAJourPierres() {
     for (let i = this.pierresEnMouvement.length - 1; i >= 0; i--) {
       const pierre = this.pierresEnMouvement[i];
@@ -439,9 +367,6 @@ class Jeu {
     if (this.balaiDroit) this.balaiDroit.mettreAJour();
   }
   
-  /**
-   * Met à jour l'interface
-   */
   mettreAJourInterface() {
     const elemEquipe = document.getElementById('equipe-courante');
     const nomEquipe = this.equipeActuelle === 'rouge' ? 'Rouge' : 'Bleue';
@@ -452,9 +377,6 @@ class Jeu {
     document.getElementById('lancers-restants').textContent = lancersRestants;
   }
   
-  /**
-   * Réinitialise le jeu
-   */
   reinitialiser() {
     if (this.balaiGauche && this.balaiGauche.estActif()) {
       this.balaiGauche.arreter();
@@ -483,9 +405,6 @@ class Jeu {
     this.afficherNotification('🔄 Jeu réinitialisé');
   }
   
-  /**
-   * Lance une nouvelle manche (garde les scores)
-   */
   nouvelleManche() {
     if (this.pierresEnMouvement.length > 0) {
       this.afficherNotification('⚠️ Attendez la fin du lancer');
@@ -514,9 +433,6 @@ class Jeu {
     this.afficherNotification('➡️ Nouvelle manche');
   }
   
-  /**
-   * Boucle d'animation
-   */
   animer() {
     requestAnimationFrame(() => this.animer());
     
@@ -525,15 +441,12 @@ class Jeu {
     this.renderer.render(this.scene, this.camera);
   }
   
-  /**
-   * Démarre le jeu
-   */
   demarrer() {
     this.animer();
   }
 }
 
-// Démarrage du jeu au chargement de la page
+// Démarrage du jeu
 window.addEventListener('DOMContentLoaded', () => {
   const jeu = new Jeu();
   
@@ -543,12 +456,9 @@ window.addEventListener('DOMContentLoaded', () => {
   console.log('✅ 3 surfaces de révolution avec G1');
   console.log('✅ 2 lathe lisses qui se raccordent');
   console.log('✅ Surface intermédiaire couleur différente');
-  console.log('✅ Balai avec opérations CSG conceptuelles');
-  console.log('✅ Trajectoire rectiligne');
-  console.log('✅ Trajectoire courbe (2 quad + 1 cubique)');
-  console.log('✅ Continuité G1 entre courbes');
-  console.log('✅ Points de contrôle modifiables');
-  console.log('✅ Collisions vraisemblables');
+  console.log('✅ 2 balais (gauche et droite)');
+  console.log('✅ Trajectoire rectiligne et courbe');
+  console.log('✅ Collisions avec angles réalistes');
   console.log('✅ Score selon règles du curling');
   console.log('========================================');
 });
