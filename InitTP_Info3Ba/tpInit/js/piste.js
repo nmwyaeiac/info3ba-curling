@@ -2,16 +2,16 @@
 function creerpiste() {
     piste = new THREE.Group();
     
-    // Surface de la piste
+    // Surface de la piste - BLANC
     let pisteGeometry = new THREE.BoxGeometry(6, 0.1, 50);
-    let pisteMaterial = new THREE.MeshStandardMaterial({ color: 0xD6FFFA });
+    let pisteMaterial = new THREE.MeshStandardMaterial({ color: 0xFFFFFF });
     let pisteSurface = new THREE.Mesh(pisteGeometry, pisteMaterial);
     pisteSurface.position.y = 0.05;
     pisteSurface.receiveShadow = true;
     piste.add(pisteSurface);
 
-    // Matériau des bordures
-    let bordureMat = new THREE.MeshBasicMaterial({ color: 0x0000FF });
+    // Matériau des bordures - MARRON BOIS
+    let bordureMat = new THREE.MeshStandardMaterial({ color: 0x8B4513 });
     
     // Bordure gauche
     let bordure1 = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.2, 50), bordureMat);
