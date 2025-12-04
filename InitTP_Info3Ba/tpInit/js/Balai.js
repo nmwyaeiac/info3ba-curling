@@ -5,22 +5,21 @@
  * 1. UNION: Assemblage manche + tête + poils
  * 2. DIFFERENCE: Création des espaces entre les poils
  * 3. INTERSECTION: Limitation des poils à la zone de brosse
- * 
- * Note: Implémentation avec primitives Three.js car le sujet
- * n'exige pas l'utilisation de librairies CSG externes
  */
 
 class Balai {
-  constructor() {
+  constructor(cote) {
+    this.cote = cote; // 'gauche' ou 'droite'
     this.groupe = new THREE.Group();
     this.actif = false;
-    this.pierreACcompagner = null;
+    this.pierreASuivre = null;
     
     // Paramètres d'animation
-    this.tempsBalayage = 0;
+    this.tempsBalayage = cote === 'gauche' ? 0 : Math.PI;
     this.vitesseBalayage = 0.01;
     this.amplitudeBalayage = 0.12;
     this.distanceDevant = 1.3;
+    this.offsetLateral = cote === 'gauche' ? -0.5 : 0.5;
     
     this.construireBalai();
   }
@@ -77,7 +76,6 @@ class Balai {
     const espacementX = 0.048;
     const espacementZ = 0.028;
     
-    // Création des poils avec espacement (DIFFERENCE conceptuelle)
     for (let i = 0; i < nbPoilsX; i++) {
       for (let j = 0; j < nbPoilsZ; j++) {
         const poil = new THREE.Mesh(geoPoil, matPoil);
@@ -119,9 +117,8 @@ class Balai {
    * Commence à suivre une pierre
    */
   commencer(pierre) {
-    this.pierreACcompagner = pierre;
+    this.pierreASuivre = pierre;
     this.actif = true;
-    this.tempsBalayage = 0;
     this.groupe.visible = true;
     this.groupe.rotation.x = Math.PI / 8;
   }
@@ -131,7 +128,7 @@ class Balai {
    */
   arreter() {
     this.actif = false;
-    this.pierreACcompagner = null;
+    this.pierreASuivre = null;
     this.groupe.visible = false;
     this.groupe.rotation.x = 0;
     this.groupe.rotation.z = 0;
@@ -141,15 +138,15 @@ class Balai {
    * Mise à jour de la position du balai
    */
   mettreAJour() {
-    if (!this.actif || !this.pierreACcompagner) return;
+    if (!this.actif || !this.pierreASuivre) return;
     
-    if (!this.pierreACcompagner.enMouvement) {
+    if (!this.pierreASuivre.enMouvement) {
       this.arreter();
       return;
     }
     
-    const posPierre = this.pierreACcompagner.obtenirPosition();
-    const vitesse = this.pierreACcompagner.vitesse;
+    const posPierre = this.pierreASuivre.obtenirPosition();
+    const vitesse = this.pierreASuivre.vitesse;
     
     // Direction du mouvement
     let direction;
@@ -163,12 +160,14 @@ class Balai {
     const posBalai = posPierre.clone();
     posBalai.add(direction.clone().multiplyScalar(-this.distanceDevant));
     
+    // Décalage latéral (gauche ou droite)
+    const perpendiculaire = new THREE.Vector3(-direction.z, 0, direction.x);
+    posBalai.add(perpendiculaire.multiplyScalar(this.offsetLateral));
+    
     // Mouvement de balayage latéral
     this.tempsBalayage += this.vitesseBalayage;
     const offsetX = Math.sin(this.tempsBalayage * Math.PI * 2) * this.amplitudeBalayage;
-    
-    const perpendiculaire = new THREE.Vector3(-direction.z, 0, direction.x);
-    posBalai.add(perpendiculaire.multiplyScalar(offsetX));
+    posBalai.add(perpendiculaire.clone().multiplyScalar(offsetX));
     
     this.groupe.position.copy(posBalai);
     
@@ -186,31 +185,3 @@ class Balai {
     return this.actif;
   }
 }
-
-/**
- * DESCRIPTION DÉTAILLÉE POUR LE RAPPORT
- * =======================================
- * 
- * OPÉRATIONS CSG UTILISÉES (conceptuellement):
- * 
- * 1. UNION (A ∪ B):
- *    - Manche ∪ Tête ∪ Connexion ∪ Poils
- *    - Combine toutes les primitives en un objet cohérent
- *    - Formule: Point appartient à A OU à B
- * 
- * 2. DIFFERENCE (A - B):
- *    - Bloc de brosse - Espaces entre poils
- *    - Crée la séparation entre les poils individuels
- *    - Formule: Point appartient à A MAIS PAS à B
- * 
- * 3. INTERSECTION (A ∩ B):
- *    - Poils ∩ Zone de la tête
- *    - Limite les poils à la zone définie par la tête
- *    - Formule: Point appartient à A ET à B
- * 
- * IMPLÉMENTATION:
- * Le sujet n'exige pas l'implémentation avec librairies CSG.
- * Les opérations sont donc réalisées conceptuellement en
- * utilisant les primitives de Three.js avec un positionnement
- * précis pour simuler les résultats des opérations CSG.
- */
