@@ -90,11 +90,11 @@ function updateWinnerDisplay() {
     if (lancerCpt >= maxLancer) {
         winnerDisplay.style.display = 'block';
         if (totalScoreRed > totalScoreBlue) {
-            winnerDisplay.innerHTML = `🏆 <span style="color: #ff4444">ROUGE GAGNE!</span><br>Score: Rouge ${totalScoreRed} - Bleu ${totalScoreBlue}`;
+            winnerDisplay.innerHTML = `<span style="color: #ff4444">ROUGE GAGNE!</span><br>Score: Rouge ${totalScoreRed} - Bleu ${totalScoreBlue}`;
         } else if (totalScoreBlue > totalScoreRed) {
-            winnerDisplay.innerHTML = `🏆 <span style="color: #4444ff">BLEU GAGNE!</span><br>Score: Rouge ${totalScoreRed} - Bleu ${totalScoreBlue}`;
+            winnerDisplay.innerHTML = ` <span style="color: #4444ff">BLEU GAGNE!</span><br>Score: Rouge ${totalScoreRed} - Bleu ${totalScoreBlue}`;
         } else {
-            winnerDisplay.innerHTML = `🤝 ÉGALITÉ!<br>Score: Rouge ${totalScoreRed} - Bleu ${totalScoreBlue}`;
+            winnerDisplay.innerHTML = ` ÉGALITÉ!<br>Score: Rouge ${totalScoreRed} - Bleu ${totalScoreBlue}`;
         }
     } else {
         if (totalScoreRed === 0 && totalScoreBlue === 0) {
