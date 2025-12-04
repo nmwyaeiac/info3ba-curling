@@ -106,40 +106,58 @@ class Collision {
    * Résout une collision entre deux pierres
    */
   resoudre(p1, p2, pos1, pos2, distance) {
-    // ========================================
-    // ÉTAPE 1: CALCUL DE LA NORMALE
-    // ========================================
-    const normale = new THREE.Vector3().subVectors(pos2, pos1);
-    if (normale.length() < 0.001) {
-      normale.set(Math.random() - 0.5, 0, Math.random() - 0.5);
-    }
-    normale.normalize();
-    
-    // ========================================
-    // ÉTAPE 2: SÉPARATION IMMÉDIATE
-    // ========================================
+    // 1. SÉPARATION GÉOMÉTRIQUE (toujours nécessaire)
+    const normale = new THREE.Vector3().subVectors(pos2, pos1).normalize();
     const penetration = this.distanceMin - distance;
+    
     if (penetration > 0) {
-      const masse1 = p1.enMouvement ? 1 : 0;
-      const masse2 = p2.enMouvement ? 1 : 0;
-      const masseTotal = masse1 + masse2;
-      
-      if (masseTotal > 0) {
-        const sep1 = (penetration * masse2 / masseTotal) + 0.015;
-        const sep2 = (penetration * masse1 / masseTotal) + 0.015;
-        
-        pos1.sub(normale.clone().multiplyScalar(sep1));
-        pos2.add(normale.clone().multiplyScalar(sep2));
-      } else {
-        const sep = (penetration / 2) + 0.015;
+        const sep = (penetration / 2) + 0.01;
         pos1.sub(normale.clone().multiplyScalar(sep));
         pos2.add(normale.clone().multiplyScalar(sep));
-      }
-      
-      p1.definirPosition(pos1.x, pos1.y, pos1.z);
-      p2.definirPosition(pos2.x, pos2.y, pos2.z);
+        
+        p1.definirPosition(pos1.x, pos1.y, pos1.z);
+        p2.definirPosition(pos2.x, pos2.y, pos2.z);
     }
     
+    // 2. TRANSFERT D'IMPULSION (seulement si les pierres se rapprochent)
+    const v1 = p1.vitesse.clone();
+    const v2 = p2.vitesse.clone();
+    const vRel = new THREE.Vector3().subVectors(v1, v2);
+    const vitesseRelativeDansNormale = vRel.dot(normale);
+    
+    // Si vitesseRelativeDansNormale > 0, les pierres s'éloignent
+    // Si < 0, elles se rapprochent → COLLISION
+    if (vitesseRelativeDansNormale >= 0) {
+        // Les pierres s'éloignent déjà, pas de transfert d'impulsion
+        return;
+    }
+    
+    // 3. CALCUL DE L'IMPULSION (formule simplifiée)
+    const j = -vitesseRelativeDansNormale * (1 + this.restitution);
+    const impulsion = normale.clone().multiplyScalar(j);
+    
+    // 4. APPLICATION (conservation de la quantité de mouvement)
+    // La pierre lancée (en mouvement) transfère de l'énergie
+    // La pierre stationnaire commence à bouger
+    
+    // Réduire la vitesse de p1 (pierre lancée)
+    p1.vitesse.sub(impulsion.clone().multiplyScalar(this.transfert));
+    
+    // Donner de la vitesse à p2 (pierre touchée)
+    if (!p2.enMouvement) {
+        p2.enMouvement = true;
+        p2.vitesse = impulsion.clone().multiplyScalar(this.transfert);
+        p2.vitesseRotation = Math.abs(j) * 0.1;
+    } else {
+        p2.vitesse.add(impulsion.clone().multiplyScalar(this.transfert));
+    }
+    
+    // 5. ÉVITER L'ARRÊT COMPLET
+    // Ne JAMAIS mettre vitesse à zéro immédiatement
+    if (p1.vitesse.length() < 0.005 && p1.enMouvement) {
+        p1.vitesse.multiplyScalar(0.5); // Ralentir progressivement
+    }
+}
     // ========================================
     // ÉTAPE 3: CALCUL DE L'IMPULSION
     // ========================================
@@ -256,3 +274,4 @@ class Collision {
  * Cette approche est VRAISEMBLABLE mais pas parfaitement
  * physique (comme demandé dans le sujet).
  */
+
