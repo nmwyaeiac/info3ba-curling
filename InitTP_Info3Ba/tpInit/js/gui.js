@@ -9,37 +9,40 @@ function creerGUI() {
     
     gui.add(menuGUI, 'lancerPierre').name('Lancer la pierre');
     
-    // Dossier Caméra
+    // Dossier Caméra avec menu déroulant
     let cameraFolder = gui.addFolder('Caméra');
     
-    cameraFolder.add({
-        vuePiste: function() {
-            camera.position.set(0, 10, 30);
-            camera.lookAt(0, 0, 0);
-            controls.target.set(0, 0, 0);
+    let cameraViews = {
+        viewSelect: 'Vue piste',
+        changeView: function() {
+            switch(this.viewSelect) {
+                case 'Vue piste':
+                    camera.position.set(0, 10, 30);
+                    camera.lookAt(0, 0, 0);
+                    controls.target.set(0, 0, 0);
+                    break;
+                case 'Vue maison':
+                    camera.position.set(0, 8, -25);
+                    camera.lookAt(0, 0, -20);
+                    controls.target.set(0, 0, -20);
+                    break;
+                case 'Vue lancer':
+                    camera.position.set(0, 5, 30);
+                    camera.lookAt(0, 0, 0);
+                    controls.target.set(0, 0, 0);
+                    break;
+            }
         }
-    }, 'vuePiste').name('Vue piste');
-
-    cameraFolder.add({
-        vueMaison: function() {
-            camera.position.set(0, 8, -25);
-            camera.lookAt(0, 0, -20);
-            controls.target.set(0, 0, -20);
-        }
-    }, 'vueMaison').name('Vue maison');
+    };
     
-    cameraFolder.add({
-        vueLancer: function() {
-            camera.position.set(0, 5, 30);
-            camera.lookAt(0, 0, 0);
-            controls.target.set(0, 0, 0);
-        }
-    }, 'vueLancer').name('Vue lancer');
+    cameraFolder.add(cameraViews, 'viewSelect', ['Vue piste', 'Vue maison', 'Vue lancer'])
+        .name('Point de vue')
+        .onChange(() => cameraViews.changeView());
     
     cameraFolder.open();
 
-    // Dossier Point d'Arrivée
-    pArriveeDossier = gui.addFolder('Point Arrivée');
+    // Dossier Point d'Arrivée (pour trajectoire rectiligne)
+    pArriveeDossier = gui.addFolder('Trajectoire Rectiligne');
     
     let geometry = new THREE.SphereGeometry(0.2, 16, 16);
     let material = new THREE.MeshBasicMaterial({ color: 0xff8800 });
@@ -47,13 +50,23 @@ function creerGUI() {
     guideParrivee.position.set(0, 0.11, -20);
     scene.add(guideParrivee);
     
-    pArriveeDossier.add(guideParrivee.position, 'x', -3, 3, 0.1)
-        .name('X')
-        .onChange(() => updateTrajRecti());
+    pArriveeDossier.add(menuGUI.trajectoireParams, 'distance', 10, 45, 0.5)
+        .name('Distance')
+        .onChange(() => updateTrajRectiFromParams());
     
-    pArriveeDossier.add(guideParrivee.position, 'z', -25, -15, 0.1)
-        .name('Z')
-        .onChange(() => updateTrajRecti());
+    pArriveeDossier.add(menuGUI.trajectoireParams, 'angle', -45, 45, 1)
+        .name('Angle (degrés)')
+        .onChange(() => updateTrajRectiFromParams());
     
     pArriveeDossier.open();
+    
+    // Dossier pour trajectoire Bézier
+    trajectoireBezierDossier = gui.addFolder('Trajectoire Bézier');
+    
+    trajectoireBezierDossier.add(menuGUI.trajectoireParams, 'longueur', 30, 50, 0.5)
+        .name('Longueur')
+        .onChange(() => updateTrajBezierFromParams());
+    
+    trajectoireBezierDossier.__ul.style.display = 'none';
+    trajectoireBezierDossier.close();
 }
