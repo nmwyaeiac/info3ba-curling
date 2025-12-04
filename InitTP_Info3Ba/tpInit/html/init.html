@@ -1,118 +1,52 @@
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" lang="fr">
+<html lang="fr">
 <head>
-  <meta charset="utf-8">
-  <meta name="author" content="Projet Curling">
-  <title>Projet Info3Ba - Curling 2025-2026</title>
-  
-  <!-- Librairies Three.js -->
-  <script type="text/javascript" src="../../libs/three/three.js"></script>
-  <script type="text/javascript" src="../../libs/three/controls/OrbitControls.js"></script>
-  <script type="text/javascript" src="../../libs/util/dat.gui.js"></script>
-  <script type="text/javascript" src="../../libs/util/Stats.js"></script>
-  
-  <!-- Scripts du projet -->
-  <script type="text/javascript" src="../js/Pierre.js"></script>
-  <script type="text/javascript" src="../js/Balai.js"></script>
-  <script type="text/javascript" src="../js/Piste.js"></script>
-  <script type="text/javascript" src="../js/Trajectoire.js"></script>
-  <script type="text/javascript" src="../js/Collision.js"></script>
-  <script type="text/javascript" src="../js/Score.js"></script>
-  <script type="text/javascript" src="../js/Jeu.js"></script>
-  
-  <!-- Feuille de style -->
-  <link rel="stylesheet" href="../css/style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Curling Game - Three.js</title>
+    <link rel="stylesheet" href="css/init.css">
 </head>
-
 <body>
-  <!-- En-tête -->
-  <header id="entete">
-    <h1>🥌 Curling - Info3Ba 2025-2026</h1>
-    <div id="info-partie">
-      <div class="info-item">
-        <span class="label">Manche</span>
-        <span id="manche-numero" class="valeur">1</span>
-      </div>
-      <div class="info-item">
-        <span class="label">Équipe</span>
-        <span id="equipe-courante" class="valeur rouge">Rouge</span>
-      </div>
-      <div class="info-item">
-        <span class="label">Lancers</span>
-        <span id="lancers-restants" class="valeur">10</span>
-      </div>
-    </div>
-  </header>
-  
-  <!-- Zone WebGL -->
-  <div id="conteneur-webgl"></div>
-  
-  <!-- Panneau latéral -->
-  <aside id="panneau-lateral">
-    <!-- Tableau des scores -->
-    <section class="carte">
-      <h3>📊 Scores</h3>
-      <div class="table-wrapper">
-        <table id="tableau-scores">
-          <thead>
-            <tr>
-              <th>Manche</th>
-              <th class="rouge">Rouge</th>
-              <th class="bleu">Bleu</th>
-            </tr>
-          </thead>
-          <tbody id="scores-body">
-            <!-- Scores ajoutés dynamiquement -->
-          </tbody>
-          <tfoot>
-            <tr class="total">
-              <th>Total</th>
-              <th id="total-rouge" class="rouge">0</th>
-              <th id="total-bleu" class="bleu">0</th>
-            </tr>
-          </tfoot>
-        </table>
-      </div>
-      
-      <!-- Meneur -->
-      <div id="affichage-meneur">
-        <span id="texte-meneur">Début de partie</span>
-      </div>
-    </section>
+    <div id="webgl"></div>
     
-    <!-- Contrôles -->
-    <section class="carte">
-      <h3>🎮 Contrôles</h3>
-      <div class="controles-liste">
-        <div class="controle">
-          <kbd>ESPACE</kbd>
-          <span>Lancer la pierre</span>
-        </div>
-        <div class="controle">
-          <kbd>L</kbd>
-          <span>Trajectoire rectiligne</span>
-        </div>
-        <div class="controle">
-          <kbd>C</kbd>
-          <span>Trajectoire courbe</span>
-        </div>
-        <div class="controle">
-          <kbd>R</kbd>
-          <span>Réinitialiser</span>
-        </div>
-        <div class="controle">
-          <kbd>N</kbd>
-          <span>Nouvelle manche</span>
-        </div>
-        <div class="controle">
-          <kbd>1-4</kbd>
-          <span>Changer de vue</span>
-        </div>
-      </div>
-    </section>
-  </aside>
-  
-  <!-- Notification -->
-  <div id="notification"></div>
+    <div id="info-panel">
+        <h3>Informations</h3>
+        <div id="team-info">Équipe actuelle: Rouge</div>
+        <div id="launches-info">Lancers restants: 10</div>
+        <div id="winner-display"></div>
+    </div>
+    
+    <div id="score-container">
+        <h3>Tableau des scores</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Lancer</th>
+                    <th>Score</th>
+                    <th>Équipe</th>
+                </tr>
+            </thead>
+            <tbody id="score-body"></tbody>
+        </table>
+    </div>
+
+    <!-- Three.js et librairies -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.7/dat.gui.min.js"></script>
+    
+    <!-- Scripts du projet -->
+    <script src="js/variables.js"></script>
+    <script src="js/scene.js"></script>
+    <script src="js/piste.js"></script>
+    <script src="js/maison.js"></script>
+    <script src="js/pierre.js"></script>
+    <script src="js/balai.js"></script>
+    <script src="js/trajectoire.js"></script>
+    <script src="js/collision.js"></script>
+    <script src="js/score.js"></script>
+    <script src="js/animation.js"></script>
+    <script src="js/gui.js"></script>
+    <script src="js/init.js"></script>
 </body>
 </html>
