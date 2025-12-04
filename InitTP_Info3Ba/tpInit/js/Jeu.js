@@ -13,7 +13,8 @@ class Jeu {
     this.trajectoire = null;
     this.collision = null;
     this.score = null;
-    this.balai = null;
+    this.balaiGauche = null;
+    this.balaiDroit = null;
     
     this.pierres = [];
     this.pierresEnMouvement = [];
@@ -135,8 +136,10 @@ class Jeu {
    * Crée le balai
    */
   creerBalai() {
-    this.balai = new Balai();
-    this.scene.add(this.balai.obtenirGroupe());
+    this.balaiGauche = new Balai('gauche');
+    this.balaiDroit = new Balai('droite');
+    this.scene.add(this.balaiGauche.obtenirGroupe());
+    this.scene.add(this.balaiDroit.obtenirGroupe());
   }
   
   /**
@@ -160,6 +163,7 @@ class Jeu {
     
     dossierJeu.add(this, 'lancerPierre').name('🥌 Lancer (ESPACE)');
     dossierJeu.add(this, 'reinitialiser').name('🔄 Réinitialiser (R)');
+    dossierJeu.add(this, 'nouvelleManche').name('➡️ Nouvelle Manche (N)');
     dossierJeu.open();
     
     const dossierBezier = this.gui.addFolder('📐 Points de Contrôle');
@@ -227,6 +231,9 @@ class Jeu {
         break;
       case 'KeyR':
         this.reinitialiser();
+        break;
+      case 'KeyN':
+        this.nouvelleManche();
         break;
       case 'Digit1':
         this.changerVue(0, 18, 28);
@@ -305,7 +312,8 @@ class Jeu {
     this.pierresEnMouvement.push(pierre);
     
     if (this.params.afficherBalai) {
-      this.balai.commencer(pierre);
+      this.balaiGauche.commencer(pierre);
+      this.balaiDroit.commencer(pierre);
     }
     
     setTimeout(() => {
@@ -325,8 +333,11 @@ class Jeu {
       this.pierresEnMouvement.splice(index, 1);
     }
     
-    if (this.balai && this.balai.estActif()) {
-      this.balai.arreter();
+    if (this.balaiGauche && this.balaiGauche.estActif()) {
+      this.balaiGauche.arreter();
+    }
+    if (this.balaiDroit && this.balaiDroit.estActif()) {
+      this.balaiDroit.arreter();
     }
     
     if (this.pierresEnMouvement.length === 0) {
@@ -424,7 +435,8 @@ class Jeu {
       }
     }
     
-    if (this.balai) this.balai.mettreAJour();
+    if (this.balaiGauche) this.balaiGauche.mettreAJour();
+    if (this.balaiDroit) this.balaiDroit.mettreAJour();
   }
   
   /**
@@ -444,8 +456,11 @@ class Jeu {
    * Réinitialise le jeu
    */
   reinitialiser() {
-    if (this.balai && this.balai.estActif()) {
-      this.balai.arreter();
+    if (this.balaiGauche && this.balaiGauche.estActif()) {
+      this.balaiGauche.arreter();
+    }
+    if (this.balaiDroit && this.balaiDroit.estActif()) {
+      this.balaiDroit.arreter();
     }
     
     for (const pierre of this.pierres) {
@@ -466,6 +481,37 @@ class Jeu {
     this.afficherTrajectoire();
     
     this.afficherNotification('🔄 Jeu réinitialisé');
+  }
+  
+  /**
+   * Lance une nouvelle manche (garde les scores)
+   */
+  nouvelleManche() {
+    if (this.pierresEnMouvement.length > 0) {
+      this.afficherNotification('⚠️ Attendez la fin du lancer');
+      return;
+    }
+    
+    if (this.balaiGauche && this.balaiGauche.estActif()) {
+      this.balaiGauche.arreter();
+    }
+    if (this.balaiDroit && this.balaiDroit.estActif()) {
+      this.balaiDroit.arreter();
+    }
+    
+    for (const pierre of this.pierres) {
+      this.scene.remove(pierre.obtenirGroupe());
+    }
+    
+    this.pierres = [];
+    this.pierresEnMouvement = [];
+    this.nombreLancers = 0;
+    this.equipeActuelle = 'rouge';
+    
+    this.mettreAJourInterface();
+    this.afficherTrajectoire();
+    
+    this.afficherNotification('➡️ Nouvelle manche');
   }
   
   /**
