@@ -40,5 +40,12 @@ const r_ = 0.12; // Rayon de la pierre
 // Menu GUI
 let menuGUI = {
     trajectoryType: 'straight',
-    lancerPierre: function() { lancerpierre(); }
+    lancerPierre: function() { lancerpierre(); },
+    trajectoireParams: {
+        // Paramètres pour trajectoire rectiligne
+        distance: 40,
+        angle: 0,
+        // Paramètres pour trajectoire Bézier
+        longueur: 42
+    }
 };
