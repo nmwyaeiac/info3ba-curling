@@ -44,7 +44,7 @@ function creerGUI() {
     let geometry = new THREE.SphereGeometry(0.2, 16, 16);
     let material = new THREE.MeshBasicMaterial({ color: 0xff8800 });
     guideParrivee = new THREE.Mesh(geometry, material);
-    guideParrivee.position.set(0, 0.5, -20);
+    guideParrivee.position.set(0, 0.11, -20);
     scene.add(guideParrivee);
     
     pArriveeDossier.add(guideParrivee.position, 'x', -3, 3, 0.1)

@@ -92,7 +92,7 @@ function pierre(pos, team) {
     group.add(box(coul));
 
     group.position.copy(pos);
-    group.rotation.x = -Math.PI / 2;
+    // Pas de rotation, les pierres sont déjà orientées correctement
 
     return group;
 }

@@ -1,6 +1,6 @@
 // Calcul du score
 function calcul_score() {
-    let centerPosition = new THREE.Vector3(0, 0.5, -20);
+    let centerPosition = new THREE.Vector3(0, 0.11, -20);
     let houseRadius = 1.83;
     
     let redScores = [];

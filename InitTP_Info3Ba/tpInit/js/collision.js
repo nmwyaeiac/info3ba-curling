@@ -64,7 +64,7 @@ function verifcollisionborder(pierre) {
         
         if (pierre === pierreCourante) {
             if (balais.length > 0) {
-                balais[0].visible = false;
+                balais.forEach(balai => balai.visible = false);
             }
         }
         

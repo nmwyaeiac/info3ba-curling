@@ -17,10 +17,10 @@ function creerTrajectoireRectiliigne() {
         folder.close();
     });
     
-    guideParrivee.position.set(0, 0.5, -20);
+    guideParrivee.position.set(0, 0.11, -20);
     guideParrivee.visible = true;
     
-    let startPoint = new THREE.Vector3(0, 0.5, 20);
+    let startPoint = new THREE.Vector3(0, 0.11, 20);
     let endPoint = guideParrivee.position.clone();
     courbeCourante = new THREE.LineCurve3(startPoint, endPoint);
     
@@ -32,7 +32,7 @@ function creerTrajectoireRectiliigne() {
 
 // Mise à jour de la trajectoire rectiligne
 function updateTrajRecti() {
-    let startPoint = new THREE.Vector3(0, 0.5, 20);
+    let startPoint = new THREE.Vector3(0, 0.11, 20);
     let endPoint = guideParrivee.position.clone();
     
     courbeCourante = new THREE.LineCurve3(startPoint, endPoint);
@@ -47,15 +47,15 @@ function creerTrajNonRectiligne() {
         pArriveeDossier.close();
     }
     
-    let p0 = new THREE.Vector3(0, 0.5, 20);
-    let p7 = new THREE.Vector3(0, 0.5, -22);
+    let p0 = new THREE.Vector3(0, 0.11, 20);
+    let p7 = new THREE.Vector3(0, 0.11, -22);
     
-    let p1 = new THREE.Vector3(3, 0.5, 15);
-    let p4 = new THREE.Vector3(3, 0.5, -5);
+    let p1 = new THREE.Vector3(3, 0.11, 15);
+    let p4 = new THREE.Vector3(3, 0.11, -5);
     
     let p2 = new THREE.Vector3(
         (p1.x + p4.x) / 2,
-        0.5,
+        0.11,
         (p1.z + p4.z) / 2
     );
     
@@ -64,7 +64,7 @@ function creerTrajNonRectiligne() {
     
     let p5 = new THREE.Vector3(
         (p4.x + p7.x) / 2,
-        0.5,
+        0.11,
         (p4.z + p7.z) / 2
     );
     
@@ -178,11 +178,11 @@ function updateTrajectoryFromControlPoints() {
     let p4 = PcontrolMeshTab[1].position.clone();
     let p7 = PcontrolMeshTab[2].position.clone();
     
-    let p0 = new THREE.Vector3(0, 0.5, 20);
+    let p0 = new THREE.Vector3(0, 0.11, 20);
     
     let p2 = new THREE.Vector3(
         (p1.x + p4.x) / 2,
-        0.5,
+        0.11,
         (p1.z + p4.z) / 2
     );
     
@@ -191,7 +191,7 @@ function updateTrajectoryFromControlPoints() {
     
     let p5 = new THREE.Vector3(
         (p4.x + p7.x) / 2,
-        0.5,
+        0.11,
         (p4.z + p7.z) / 2
     );
     

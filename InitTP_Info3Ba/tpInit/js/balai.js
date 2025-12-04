@@ -42,9 +42,17 @@ function creerbalai() {
 
 // Création de tous les balais
 function creerbalais() {
-    let balai = creerbalai();
-    balai.position.set(0, 0.2, 0);
-    balai.visible = false;
-    balais.push(balai);
-    scene.add(balai);
+    // Premier balai
+    let balai1 = creerbalai();
+    balai1.position.set(0, 0.2, 0);
+    balai1.visible = false;
+    balais.push(balai1);
+    scene.add(balai1);
+    
+    // Deuxième balai
+    let balai2 = creerbalai();
+    balai2.position.set(0, 0.2, 0);
+    balai2.visible = false;
+    balais.push(balai2);
+    scene.add(balai2);
 }
