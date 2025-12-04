@@ -8,8 +8,26 @@ function creerTrajectoire() {
     
     if (menuGUI.trajectoryType === 'straight') {
         creerTrajectoireRectiliigne();
+        // Afficher le dossier rectiligne, cacher le Bézier
+        if (pArriveeDossier) {
+            pArriveeDossier.__ul.style.display = 'block';
+            pArriveeDossier.open();
+        }
+        if (trajectoireBezierDossier) {
+            trajectoireBezierDossier.__ul.style.display = 'none';
+            trajectoireBezierDossier.close();
+        }
     } else if (menuGUI.trajectoryType === 'curved') {
         creerTrajNonRectiligne();
+        // Afficher le dossier Bézier, cacher le rectiligne
+        if (pArriveeDossier) {
+            pArriveeDossier.__ul.style.display = 'none';
+            pArriveeDossier.close();
+        }
+        if (trajectoireBezierDossier) {
+            trajectoireBezierDossier.__ul.style.display = 'block';
+            trajectoireBezierDossier.open();
+        }
     }
 }
 
@@ -23,20 +41,37 @@ function creerTrajectoireRectiliigne() {
         folder.close();
     });
     
-    guideParrivee.position.set(0, 0.11, -20);
     guideParrivee.visible = true;
+    updateTrajRectiFromParams();
+}
+
+// Nouvelle fonction : Mise à jour de la trajectoire rectiligne depuis les paramètres
+function updateTrajRectiFromParams() {
+    // Empêcher la modification pendant l'animation
+    if (isAnimation) return;
     
+    let distance = menuGUI.trajectoireParams.distance;
+    let angle = menuGUI.trajectoireParams.angle;
+    
+    // Conversion de l'angle en radians
+    let angleRad = (angle * Math.PI) / 180;
+    
+    // Point de départ
     let startPoint = new THREE.Vector3(0, 0.11, 20);
+    
+    // Calcul du point d'arrivée avec distance et angle
+    let endX = Math.sin(angleRad) * distance;
+    let endZ = 20 - Math.cos(angleRad) * distance;
+    
+    guideParrivee.position.set(endX, 0.11, endZ);
+    
     let endPoint = guideParrivee.position.clone();
+    
     courbeCourante = new THREE.LineCurve3(startPoint, endPoint);
-    
-    pArriveeDossier.__ul.style.display = 'block';
-    pArriveeDossier.open();
-    
     visuTrajectoire();
 }
 
-// Mise à jour de la trajectoire rectiligne
+// Ancienne fonction : Mise à jour de la trajectoire rectiligne (conservée pour compatibilité)
 function updateTrajRecti() {
     // Empêcher la modification pendant l'animation
     if (isAnimation) return;
@@ -48,12 +83,68 @@ function updateTrajRecti() {
     visuTrajectoire();
 }
 
+// Nouvelle fonction : Mise à jour de la trajectoire Bézier depuis les paramètres
+function updateTrajBezierFromParams() {
+    // Empêcher la modification pendant l'animation
+    if (isAnimation) return;
+    
+    let longueur = menuGUI.trajectoireParams.longueur;
+    
+    let p0 = new THREE.Vector3(0, 0.11, 20);
+    let p7 = new THREE.Vector3(0, 0.11, 20 - longueur);
+    
+    // Ajuster les points de contrôle en fonction de la longueur
+    let ratio = longueur / 42; // 42 est la longueur de base
+    
+    let p1 = new THREE.Vector3(3, 0.11, 15);
+    let p4 = new THREE.Vector3(3, 0.11, -5 * ratio);
+    
+    let p2 = new THREE.Vector3(
+        (p1.x + p4.x) / 2,
+        0.11,
+        (p1.z + p4.z) / 2
+    );
+    
+    let tangent1 = new THREE.Vector3().subVectors(p2, p1);
+    let p3 = new THREE.Vector3().addVectors(p2, tangent1.clone().multiplyScalar(0.8));
+    
+    let p5 = new THREE.Vector3(
+        (p4.x + p7.x) / 2,
+        0.11,
+        (p4.z + p7.z) / 2
+    );
+    
+    let tangent2 = new THREE.Vector3().subVectors(p5, p4);
+    let p6 = new THREE.Vector3().addVectors(p5, tangent2.clone().multiplyScalar(0.6));
+    
+    // Courbe quadratique de Bézier
+    let courbe1 = new THREE.QuadraticBezierCurve3(p0, p1, p2);
+    // Courbe cubique de Bézier
+    let courbe2 = new THREE.CubicBezierCurve3(p2, p3, p4, p5);
+    // Courbe quadratique de Bézier
+    let courbe3 = new THREE.QuadraticBezierCurve3(p5, p6, p7);
+    
+    courbeCourante = new THREE.CurvePath();
+    courbeCourante.add(courbe1);
+    courbeCourante.add(courbe2);
+    courbeCourante.add(courbe3);
+    
+    PconrolTab = [p1, p4, p7];
+    
+    if (PcontrolMeshTab.length > 0) {
+        PcontrolMeshTab[0].position.copy(p1);
+        PcontrolMeshTab[1].position.copy(p4);
+        PcontrolMeshTab[2].position.copy(p7);
+        PcontrolMeshTab.forEach(mesh => mesh.visible = true);
+    }
+    
+    visuTrajectoire();
+}
+
 // Trajectoire courbe (Bézier)
 function creerTrajNonRectiligne() {
     if (guideParrivee) {
         guideParrivee.visible = false;
-        pArriveeDossier.__ul.style.display = 'none';
-        pArriveeDossier.close();
     }
     
     let p0 = new THREE.Vector3(0, 0.11, 20);
