@@ -66,6 +66,8 @@ function verifcollisionborder(pierre) {
             if (balais.length > 0) {
                 balais.forEach(balai => balai.visible = false);
             }
+            // Arrêter l'animation
+            isAnimation = false;
         }
         
         scene.remove(pierre);
@@ -74,6 +76,11 @@ function verifcollisionborder(pierre) {
             pierre_jouer.splice(index, 1);
         }
         
-        calcul_score();
+        // Ne calculer le score qu'une seule fois après la sortie de la pierre courante
+        if (pierre === pierreCourante && !scoreCalculated) {
+            calcul_score();
+            switchTeam();
+            scoreCalculated = true;
+        }
     }
 }
